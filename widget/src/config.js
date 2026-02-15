@@ -4,7 +4,7 @@
 const CONFIG = {
   // API Gateway base URL (update after deployment)
   // Replace with your actual API Gateway URL after running 'npm run deploy'
-  API_BASE: 'https://your-api-id.execute-api.ap-south-1.amazonaws.com/dev',
+  API_BASE: 'https://ofu8qmpqt9.execute-api.ap-south-1.amazonaws.com/dev',
   
   // S3 bucket for photo uploads
   // Must match the bucket name configured in serverless.yml

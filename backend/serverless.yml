@@ -9,7 +9,6 @@ provider:
   
   environment:
     FASHN_API_KEY: ${env:FASHN_API_KEY}
-    AWS_REGION: ${env:AWS_REGION}
     DYNAMO_TABLE: ${env:DYNAMO_TABLE}
     S3_UPLOAD_BUCKET: wishlize-uploads
     S3_RESULTS_BUCKET: wishlize-results
@@ -39,8 +38,8 @@ provider:
           Resource:
             - arn:aws:dynamodb:ap-south-1:*:table/WishlizeSessions
   
-  logs:
-    restApi: true
+  # Note: API Gateway CloudWatch logs will be enabled manually via CLI
+  # after deployment to avoid Serverless custom resource issues
   
   tracing:
     lambda: true

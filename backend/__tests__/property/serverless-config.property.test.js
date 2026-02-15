@@ -256,9 +256,9 @@ describe('Feature: wishlize-project-setup, Serverless Configuration Properties',
       expect(serverlessConfig.provider.environment.FASHN_API_KEY).toMatch(/\$\{env:FASHN_API_KEY\}/);
     });
 
-    it('should reference AWS_REGION from environment', () => {
-      expect(serverlessConfig.provider.environment.AWS_REGION).toBeDefined();
-      expect(serverlessConfig.provider.environment.AWS_REGION).toMatch(/\$\{env:AWS_REGION\}/);
+    it('should not set AWS_REGION in environment (reserved by Lambda)', () => {
+      // AWS_REGION is automatically provided by Lambda runtime
+      expect(serverlessConfig.provider.environment.AWS_REGION).toBeUndefined();
     });
 
     it('should reference DYNAMO_TABLE from environment', () => {
@@ -284,7 +284,7 @@ describe('Feature: wishlize-project-setup, Serverless Configuration Properties',
         fc.property(fc.constant(serverlessConfig.provider.environment), (env) => {
           const requiredEnvVars = [
             'FASHN_API_KEY',
-            'AWS_REGION',
+
             'DYNAMO_TABLE',
             'S3_UPLOAD_BUCKET',
             'S3_RESULTS_BUCKET',
@@ -360,7 +360,6 @@ describe('Feature: wishlize-project-setup, Serverless Configuration Properties',
           // Verify environment variables exist
           const envValid = (
             config.provider?.environment?.FASHN_API_KEY !== undefined &&
-            config.provider?.environment?.AWS_REGION !== undefined &&
             config.provider?.environment?.DYNAMO_TABLE !== undefined
           );
           

@@ -166,10 +166,9 @@ describe('Feature: wishlize-project-setup, Configuration Files Properties', () =
       expect(typeof envVariables.FASHN_API_KEY).toBe('string');
     });
 
-    it('should contain AWS_REGION variable declaration', () => {
-      expect(envVariables.AWS_REGION).toBeDefined();
-      expect(typeof envVariables.AWS_REGION).toBe('string');
-      expect(envVariables.AWS_REGION.length).toBeGreaterThan(0);
+    it('should not have AWS_REGION in .env (reserved by Lambda, set in serverless.yml provider.region)', () => {
+      // AWS_REGION is reserved by Lambda and set via provider.region in serverless.yml
+      expect(envVariables.AWS_REGION).toBeUndefined();
     });
 
     it('should contain DYNAMO_TABLE variable declaration', () => {
@@ -178,9 +177,7 @@ describe('Feature: wishlize-project-setup, Configuration Files Properties', () =
       expect(envVariables.DYNAMO_TABLE.length).toBeGreaterThan(0);
     });
 
-    it('should have AWS_REGION set to ap-south-1', () => {
-      expect(envVariables.AWS_REGION).toBe('ap-south-1');
-    });
+
 
     it('should have DYNAMO_TABLE set to WishlizeSessions', () => {
       expect(envVariables.DYNAMO_TABLE).toBe('WishlizeSessions');
@@ -202,7 +199,6 @@ describe('Feature: wishlize-project-setup, Configuration Files Properties', () =
     it('should contain all required environment variables', () => {
       const requiredVars = [
         'FASHN_API_KEY',
-        'AWS_REGION',
         'DYNAMO_TABLE',
         'S3_UPLOAD_BUCKET',
         'S3_RESULTS_BUCKET',
@@ -224,8 +220,7 @@ describe('Feature: wishlize-project-setup, Configuration Files Properties', () =
       fc.assert(
         fc.property(fc.constant(envVariables), (vars) => {
           return (
-            // AWS_REGION should be a valid AWS region format
-            /^[a-z]+-[a-z]+-\d+$/.test(vars.AWS_REGION) &&
+
             // DYNAMO_TABLE should be a valid table name
             vars.DYNAMO_TABLE.length > 0 &&
             /^[a-zA-Z0-9_.-]+$/.test(vars.DYNAMO_TABLE) &&
@@ -263,7 +258,7 @@ describe('Feature: wishlize-project-setup, Configuration Files Properties', () =
 
     // Property-based test: No environment variables should be empty
     it('should not have empty values for required environment variables', () => {
-      const requiredVars = ['AWS_REGION', 'DYNAMO_TABLE', 'S3_UPLOAD_BUCKET', 'S3_RESULTS_BUCKET', 'S3_CDN_BUCKET'];
+      const requiredVars = ['DYNAMO_TABLE', 'S3_UPLOAD_BUCKET', 'S3_RESULTS_BUCKET', 'S3_CDN_BUCKET'];
       
       fc.assert(
         fc.property(fc.constant(envVariables), (vars) => {

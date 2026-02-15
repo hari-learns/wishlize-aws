@@ -153,8 +153,8 @@ The implementation follows this sequence:
     - **Property 10: Backend Environment File Structure**
     - **Validates: Requirements 6.1, 6.3, 9.2, 9.3, 9.4**
 
-- [ ] 7. Create demo store pages and assets
-  - [ ] 7.1 Create demo-store/index.html
+- [x] 7. Create demo store pages and assets
+  - [x] 7.1 Create demo-store/index.html
     - Add HTML5 boilerplate with proper meta tags
     - Add header with "Wishlize Demo Store" title
     - Add main section with product grid
@@ -163,7 +163,7 @@ The implementation follows this sequence:
     - Link to assets/css/store.css
     - _Requirements: 10.1_
   
-  - [ ] 7.2 Create demo-store/product/blazer.html
+  - [x] 7.2 Create demo-store/product/blazer.html
     - Add HTML5 boilerplate with proper meta tags
     - Add header with navigation back to store
     - Add product detail section with image and info
@@ -173,7 +173,7 @@ The implementation follows this sequence:
     - Include comment indicating where widget script will be loaded
     - _Requirements: 10.2, 10.5_
   
-  - [ ] 7.3 Create demo-store/assets/css/store.css
+  - [x] 7.3 Create demo-store/assets/css/store.css
     - Add CSS reset and base styles
     - Add header and footer styles
     - Add product grid and product card styles
@@ -182,7 +182,7 @@ The implementation follows this sequence:
     - Add responsive styles for mobile
     - _Requirements: 10.4_
   
-  - [ ]* 7.4 Write property test for demo store widget integration placeholder
+  - [x] 7.4 Write property test for demo store widget integration placeholder
     - **Property 13: Demo Store Widget Integration Placeholder**
     - **Validates: Requirements 10.5**
 

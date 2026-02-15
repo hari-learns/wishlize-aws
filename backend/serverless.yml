@@ -38,8 +38,8 @@ provider:
           Resource:
             - arn:aws:dynamodb:ap-south-1:*:table/WishlizeSessions
   
-  # Note: API Gateway CloudWatch logs will be enabled manually via CLI
-  # after deployment to avoid Serverless custom resource issues
+  logs:
+    restApi: true
   
   tracing:
     lambda: true

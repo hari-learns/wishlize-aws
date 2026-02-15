@@ -11,5 +11,8 @@ module.exports = {
     '!jest.config.js'
   ],
   coverageDirectory: 'coverage',
-  verbose: true
+  verbose: true,
+  transformIgnorePatterns: [
+    'node_modules/(?!(jsdom|@exodus/bytes|html-encoding-sniffer)/)'
+  ]
 };

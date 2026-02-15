@@ -1,15 +1,15 @@
 /**
- * Wishlize Lambda Handlers
+ * Wishlize Lambda Handlers (Simplified - No Email)
  * 
- * Main entry points for the API:
- * - POST /get-upload-url: Get presigned URL for photo upload
+ * Main entry points:
+ * - POST /get-upload-url: Get presigned URL (IP-based session)
  * - POST /validate-photo: Validate uploaded photo
  * - POST /process-tryon: Generate virtual try-on
- * 
- * All handlers use the middleware wrapper for common functionality.
+ * - GET /status/{sessionId}: Check status
  */
 
-const { createHandler, hashForLog } = require('./lib/middleware');
+const { createHandler } = require('./lib/middleware');
+const { anonymizeIp } = require('./lib/logger');
 const {
   validateGetUploadUrlBody,
   validateValidatePhotoBody,
@@ -19,31 +19,21 @@ const { PhotoValidationError } = require('./lib/errors');
 
 // Services
 const s3Service = require('./services/s3Service');
-const sessionStore = require('./services/sessionStore');
+const sessionStore = require('./services/sessionStore-simple');
 const photoValidator = require('./validators/photoCheck');
 const fashnClient = require('./services/fashnClient');
 
 // ============================================================================
-// Handler: GET /get-upload-url
+// Handler: POST /get-upload-url
 // ============================================================================
 
-/**
- * Get presigned upload URL handler
- * Creates or retrieves session and generates S3 presigned POST URL
- */
 const getUploadUrlHandler = async (validatedInput, logger, event) => {
-  const { email, fileType } = validatedInput;
+  const { fileType } = validatedInput;
+  const clientIp = event.requestContext?.identity?.sourceIp || 'unknown';
 
-  // Get client metadata for session
-  const metadata = {
-    userAgent: event.headers?.['User-Agent'],
-    ipHash: hashForLog(event.requestContext?.identity?.sourceIp),
-    source: 'widget'
-  };
-
-  // Get or create session
-  logger.info('Getting or creating session', { emailHash: hashForLog(email) });
-  const session = await sessionStore.getOrCreateSession(email, metadata);
+  // Get or create session (IP-based)
+  logger.info('Getting or creating session', { ip: anonymizeIp(clientIp) });
+  const session = await sessionStore.getOrCreateSession(clientIp);
 
   // Check if quota exceeded
   if (session.triesLeft <= 0) {
@@ -81,16 +71,12 @@ const getUploadUrlHandler = async (validatedInput, logger, event) => {
 // Handler: POST /validate-photo
 // ============================================================================
 
-/**
- * Validate photo handler
- * Downloads image from S3, validates with Rekognition, updates session
- */
 const validatePhotoHandler = async (validatedInput, logger) => {
-  const { email, sessionId, imageUrl } = validatedInput;
+  const { sessionId, imageUrl } = validatedInput;
 
-  // Verify session exists and belongs to email
-  logger.info('Verifying session', { sessionId, emailHash: hashForLog(email) });
-  const session = await sessionStore.getSession(sessionId, email);
+  // Verify session exists
+  logger.info('Verifying session', { sessionId });
+  const session = await sessionStore.getSession(sessionId);
 
   // Download image from S3 for validation
   logger.info('Downloading image for validation', { imageUrl });
@@ -125,7 +111,7 @@ const validatePhotoHandler = async (validatedInput, logger) => {
   logger.info('Running photo validation');
   const validationResult = await photoValidator.validatePhoto(
     imageBuffer,
-    'image/jpeg' // S3 uploads are always JPEG after processing
+    'image/jpeg'
   );
 
   // Update session with validation results
@@ -136,7 +122,6 @@ const validatePhotoHandler = async (validatedInput, logger) => {
   
   await sessionStore.updateValidation(
     sessionId,
-    email,
     validationResult,
     imageUrl
   );
@@ -156,16 +141,12 @@ const validatePhotoHandler = async (validatedInput, logger) => {
 // Handler: POST /process-tryon
 // ============================================================================
 
-/**
- * Process try-on handler
- * Validates quota, submits to FASHN API, polls for result, saves to session
- */
 const processTryOnHandler = async (validatedInput, logger, event) => {
-  const { email, sessionId, garmentUrl } = validatedInput;
+  const { sessionId, garmentUrl } = validatedInput;
 
   // Verify session
   logger.info('Verifying session for try-on', { sessionId });
-  const session = await sessionStore.getSession(sessionId, email);
+  const session = await sessionStore.getSession(sessionId);
 
   // Verify photo has been validated
   if (session.status !== 'validated') {
@@ -184,7 +165,7 @@ const processTryOnHandler = async (validatedInput, logger, event) => {
 
   // Consume one try
   logger.info('Consuming try', { sessionId });
-  const triesRemaining = await sessionStore.consumeTry(sessionId, email);
+  const triesRemaining = await sessionStore.consumeTry(sessionId);
 
   // Submit to FASHN API
   logger.info('Submitting to FASHN API', { 
@@ -194,7 +175,6 @@ const processTryOnHandler = async (validatedInput, logger, event) => {
   });
 
   try {
-    // Start the generation process
     const submission = await fashnClient.submitTryOnRequest({
       personImageUrl: session.personImageUrl,
       garmentImageUrl: garmentUrl,
@@ -205,8 +185,6 @@ const processTryOnHandler = async (validatedInput, logger, event) => {
       predictionId: submission.predictionId 
     });
 
-    // For async processing, return processing status
-    // Client will poll for results or use webhooks
     return {
       success: true,
       status: 'processing',
@@ -219,29 +197,21 @@ const processTryOnHandler = async (validatedInput, logger, event) => {
     };
 
   } catch (error) {
-    // Mark session as failed and refund the try
-    logger.error('FASHN submission failed', { error: error.message });
-    await sessionStore.markFailed(sessionId, email, error.message);
-    
-    // Re-throw to be handled by middleware
+    // Error handling without markFailed
     throw error;
   }
 };
 
 // ============================================================================
-// Handler: GET /status/{sessionId} (for polling)
+// Handler: GET /status/{sessionId}
 // ============================================================================
 
-/**
- * Check try-on status handler
- * Returns current status and result if completed
- */
 const checkStatusHandler = async (validatedInput, logger) => {
-  const { email, sessionId } = validatedInput;
+  const { sessionId } = validatedInput;
 
   // Get session
   logger.info('Checking session status', { sessionId });
-  const session = await sessionStore.getSession(sessionId, email);
+  const session = await sessionStore.getSession(sessionId);
 
   // If still processing, check with FASHN API
   if (session.status === 'processing' && session.predictionId) {
@@ -249,20 +219,19 @@ const checkStatusHandler = async (validatedInput, logger) => {
       const status = await fashnClient.checkPredictionStatus(session.predictionId);
 
       if (status.status === 'completed') {
-        // Save result
         const resultUrl = status.output?.[0];
         if (resultUrl) {
-          await sessionStore.saveResult(sessionId, email, resultUrl);
+          await sessionStore.saveResult(sessionId, resultUrl);
           session.status = 'completed';
           session.resultImageUrl = resultUrl;
         }
       } else if (status.status === 'failed') {
-        await sessionStore.markFailed(sessionId, email, status.error || 'Generation failed');
+        await sessionStore.saveResult?.(sessionId, null);
         session.status = 'failed';
+        session.errorMessage = status.error || 'Generation failed';
       }
     } catch (error) {
       logger.error('Failed to check FASHN status', { error: error.message });
-      // Don't fail the request, just return current cached status
     }
   }
 
@@ -282,7 +251,6 @@ const checkStatusHandler = async (validatedInput, logger) => {
 // ============================================================================
 
 module.exports = {
-  // Main handlers with middleware wrapper
   getUploadUrl: createHandler(
     'getUploadUrl',
     validateGetUploadUrlBody,
@@ -304,20 +272,10 @@ module.exports = {
   checkStatus: createHandler(
     'checkStatus',
     (body) => {
-      // Custom validation for status check (uses path params)
-      const { sessionId, email } = body;
+      const { sessionId } = body;
       if (!sessionId) throw new Error('sessionId is required');
-      if (!email) throw new Error('email is required');
-      return { sessionId, email };
+      return { sessionId };
     },
     checkStatusHandler
-  ),
-
-  // Raw handlers for testing
-  _raw: {
-    getUploadUrlHandler,
-    validatePhotoHandler,
-    processTryOnHandler,
-    checkStatusHandler
-  }
+  )
 };

@@ -1,0 +1,292 @@
+/* Wishlize widget styles - To be implemented in Phase 2 */
+
+/* Modal Overlay */
+.wishlize-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.wishlize-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Modal Content */
+.wishlize-modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal Header */
+.wishlize-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 0 24px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 24px;
+}
+
+.wishlize-modal-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.wishlize-close-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.wishlize-close-btn:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+/* Modal Body */
+.wishlize-modal-body {
+  padding: 0 24px 24px 24px;
+}
+
+.wishlize-modal-body h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Upload Section */
+.wishlize-upload-section {
+  margin-bottom: 24px;
+}
+
+.wishlize-upload-area {
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+
+.wishlize-upload-area:hover {
+  border-color: #3b82f6;
+}
+
+.wishlize-upload-area input[type="file"] {
+  display: none;
+}
+
+.wishlize-upload-label {
+  cursor: pointer;
+  display: block;
+}
+
+.wishlize-upload-label span {
+  display: block;
+  font-size: 16px;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.wishlize-upload-label small {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Preview Section */
+.wishlize-preview-section {
+  margin-bottom: 24px;
+}
+
+.wishlize-preview-container {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.wishlize-preview-container img {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 6px;
+}
+
+/* Processing Section */
+.wishlize-processing-section {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.wishlize-progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 16px 0;
+}
+
+.wishlize-progress-fill {
+  height: 100%;
+  background-color: #3b82f6;
+  width: 0%;
+  transition: width 0.3s ease;
+  animation: wishlize-progress-animation 2s infinite;
+}
+
+@keyframes wishlize-progress-animation {
+  0% { width: 0%; }
+  50% { width: 70%; }
+  100% { width: 100%; }
+}
+
+.wishlize-processing-text {
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Results Section */
+.wishlize-results-section {
+  margin-bottom: 24px;
+}
+
+.wishlize-result-container {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.wishlize-result-container img {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 6px;
+}
+
+/* Modal Footer */
+.wishlize-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Buttons */
+.wishlize-btn {
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.wishlize-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wishlize-btn-primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.wishlize-btn-primary:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.wishlize-btn-secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.wishlize-btn-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+/* Widget Container (for embedding in product pages) */
+.wishlize-widget-container {
+  margin: 20px 0;
+}
+
+.wishlize-trigger-btn {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+  max-width: 300px;
+}
+
+.wishlize-trigger-btn:hover {
+  background-color: #2563eb;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .wishlize-modal-overlay {
+    padding: 10px;
+  }
+  
+  .wishlize-modal-content {
+    max-height: 95vh;
+  }
+  
+  .wishlize-modal-header,
+  .wishlize-modal-body,
+  .wishlize-modal-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  
+  .wishlize-upload-area {
+    padding: 24px 16px;
+  }
+  
+  .wishlize-modal-footer {
+    flex-direction: column;
+  }
+  
+  .wishlize-btn {
+    width: 100%;
+  }
+}

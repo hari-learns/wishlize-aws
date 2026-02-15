@@ -8,35 +8,63 @@ provider:
   stage: ${opt:stage, 'dev'}
   
   environment:
-    FASHN_API_KEY: ${env:FASHN_API_KEY}
-    DYNAMO_TABLE: ${env:DYNAMO_TABLE}
-    S3_UPLOAD_BUCKET: wishlize-uploads
-    S3_RESULTS_BUCKET: wishlize-results
-    S3_CDN_BUCKET: wishlize-cdn
+    FASHN_API_KEY: ${env:FASHN_API_KEY, ''}
+    DYNAMO_TABLE: ${env:DYNAMO_TABLE, 'WishlizeSessions'}
+    S3_UPLOAD_BUCKET: ${env:S3_UPLOAD_BUCKET, 'wishlize-uploads-mumbai'}
+    S3_RESULTS_BUCKET: ${env:S3_RESULTS_BUCKET, 'wishlize-results-mumbai'}
+    S3_CDN_BUCKET: ${env:S3_CDN_BUCKET, 'wishlize-cdn-mumbai'}
+    RATE_LIMIT_PER_IP: ${env:RATE_LIMIT_PER_IP, '10'}
+    RATE_LIMIT_PER_EMAIL: ${env:RATE_LIMIT_PER_EMAIL, '3'}
+    LOG_LEVEL: ${env:LOG_LEVEL, 'info'}
+    CORS_ALLOWED_ORIGINS: ${env:CORS_ALLOWED_ORIGINS, '*'}
+    ENCRYPTION_KEY: ${env:ENCRYPTION_KEY, 'wishlize-default-key-change-in-production'}
+    NODE_ENV: ${self:provider.stage}
   
   iam:
     role:
       statements:
+        # S3 permissions for uploads and results
         - Effect: Allow
           Action:
             - s3:GetObject
             - s3:PutObject
+            - s3:DeleteObject
+            - s3:GetBucketLocation
+            - s3:ListBucket
+            - s3:HeadBucket
           Resource:
-            - arn:aws:s3:::wishlize-uploads/*
-            - arn:aws:s3:::wishlize-results/*
-            - arn:aws:s3:::wishlize-cdn/*
+            - arn:aws:s3:::${self:provider.environment.S3_UPLOAD_BUCKET}
+            - arn:aws:s3:::${self:provider.environment.S3_UPLOAD_BUCKET}/*
+            - arn:aws:s3:::${self:provider.environment.S3_RESULTS_BUCKET}
+            - arn:aws:s3:::${self:provider.environment.S3_RESULTS_BUCKET}/*
+            - arn:aws:s3:::${self:provider.environment.S3_CDN_BUCKET}
+            - arn:aws:s3:::${self:provider.environment.S3_CDN_BUCKET}/*
+        
+        # Rekognition permissions for photo validation
         - Effect: Allow
           Action:
             - rekognition:DetectFaces
+            - rekognition:DetectModerationLabels
           Resource: '*'
+        
+        # DynamoDB permissions for session management
         - Effect: Allow
           Action:
             - dynamodb:GetItem
             - dynamodb:PutItem
             - dynamodb:UpdateItem
             - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:DeleteItem
           Resource:
-            - arn:aws:dynamodb:ap-south-1:*:table/WishlizeSessions
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMO_TABLE}
+        
+        # X-Ray tracing permissions
+        - Effect: Allow
+          Action:
+            - xray:PutTraceSegments
+            - xray:PutTelemetryRecords
+          Resource: '*'
   
   logs:
     restApi: true
@@ -46,26 +74,87 @@ provider:
     apiGateway: true
 
 functions:
-  validatePhoto:
-    handler: handler.validatePhoto
-    memorySize: 512
+  # Get presigned upload URL
+  getUploadUrl:
+    handler: handler-simple.getUploadUrl
+    memorySize: 256
     timeout: 10
+    events:
+      - http:
+          path: get-upload-url
+          method: post
+          cors:
+            origin: ${self:provider.environment.CORS_ALLOWED_ORIGINS}
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+  
+  # Validate uploaded photo
+  validatePhoto:
+    handler: handler-simple.validatePhoto
+    memorySize: 512
+    timeout: 15
     events:
       - http:
           path: validate-photo
           method: post
-          cors: true
+          cors:
+            origin: ${self:provider.environment.CORS_ALLOWED_ORIGINS}
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
   
+  # Process virtual try-on
   processTryOn:
-    handler: handler.processTryOn
+    handler: handler-simple.processTryOn
     memorySize: 1024
     timeout: 30
     events:
       - http:
           path: process-tryon
           method: post
-          cors: true
+          cors:
+            origin: ${self:provider.environment.CORS_ALLOWED_ORIGINS}
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+  
+  # Check try-on status (for polling)
+  checkStatus:
+    handler: handler-simple.checkStatus
+    memorySize: 256
+    timeout: 10
+    events:
+      - http:
+          path: status/{sessionId}
+          method: get
+          cors:
+            origin: ${self:provider.environment.CORS_ALLOWED_ORIGINS}
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+          request:
+            parameters:
+              paths:
+                sessionId: true
 
 plugins:
   - serverless-offline
   - serverless-dotenv-plugin
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+    host: 0.0.0.0

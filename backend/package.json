@@ -16,7 +16,8 @@
   },
   "dependencies": {
     "aws-sdk": "^2.1500.0",
-    "axios": "^1.6.0"
+    "axios": "^1.6.0",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "cheerio": "^1.2.0",

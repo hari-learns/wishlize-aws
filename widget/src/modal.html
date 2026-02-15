@@ -1,0 +1,61 @@
+<!-- Wishlize modal UI template - To be implemented in Phase 2 -->
+
+<div id="wishlize-modal" class="wishlize-modal">
+  <div class="wishlize-modal-overlay">
+    <div class="wishlize-modal-content">
+      <!-- Modal Header -->
+      <div class="wishlize-modal-header">
+        <h2>Virtual Try-On</h2>
+        <button class="wishlize-close-btn" aria-label="Close modal">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="wishlize-modal-body">
+        <!-- Photo Upload Section -->
+        <div class="wishlize-upload-section">
+          <h3>Upload Your Photo</h3>
+          <div class="wishlize-upload-area">
+            <input type="file" id="wishlize-photo-input" accept="image/*" />
+            <label for="wishlize-photo-input" class="wishlize-upload-label">
+              <span>Click to upload or drag & drop</span>
+              <small>Supported formats: JPG, PNG, WebP</small>
+            </label>
+          </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div class="wishlize-preview-section" style="display: none;">
+          <h3>Preview</h3>
+          <div class="wishlize-preview-container">
+            <img id="wishlize-photo-preview" alt="Photo preview" />
+          </div>
+        </div>
+
+        <!-- Processing Section -->
+        <div class="wishlize-processing-section" style="display: none;">
+          <h3>Processing Virtual Try-On</h3>
+          <div class="wishlize-progress-bar">
+            <div class="wishlize-progress-fill"></div>
+          </div>
+          <p class="wishlize-processing-text">Please wait while we process your virtual try-on...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div class="wishlize-results-section" style="display: none;">
+          <h3>Your Virtual Try-On Result</h3>
+          <div class="wishlize-result-container">
+            <img id="wishlize-result-image" alt="Virtual try-on result" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="wishlize-modal-footer">
+        <button class="wishlize-btn wishlize-btn-secondary" id="wishlize-cancel-btn">Cancel</button>
+        <button class="wishlize-btn wishlize-btn-primary" id="wishlize-process-btn" disabled>
+          Start Try-On
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

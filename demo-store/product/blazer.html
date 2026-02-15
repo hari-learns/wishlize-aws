@@ -3,8 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classic Navy Blazer - Wishlize Demo Store</title>
-    <link rel="stylesheet" href="../assets/css/store.css">
+    <title>Purple Blazer - Wishlize Demo Store</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+        
+        header {
+            background: #1a1a2e;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        header a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+        
+        .product-detail {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .product-images {
+            position: relative;
+        }
+        
+        .product-images img {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        
+        .product-info h2 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #1a1a2e;
+        }
+        
+        .price {
+            font-size: 28px;
+            font-weight: 700;
+            color: #6b4ee6;
+            margin-bottom: 20px;
+        }
+        
+        .description {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        /* Wishlize Widget Button */
+        #wishlize-widget-container {
+            margin: 24px 0;
+            min-height: 60px;
+        }
+        
+        #wishlize-widget-container:empty:before {
+            content: "Loading...";
+            display: block;
+            padding: 16px;
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .wishlize-trigger-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 36px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .wishlize-trigger-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+        
+        .btn-primary {
+            background: #1a1a2e;
+            color: white;
+            padding: 16px 36px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 12px;
+            transition: background 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background: #2d2d44;
+        }
+        
+        .product-meta {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #eee;
+        }
+        
+        .product-meta h3 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #1a1a2e;
+        }
+        
+        .product-meta ul {
+            list-style: none;
+            color: #666;
+            line-height: 2;
+        }
+        
+        .product-meta li:before {
+            content: "✓ ";
+            color: #6b4ee6;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            border-top: 1px solid #eee;
+            margin-top: 60px;
+        }
+        
+        @media (max-width: 768px) {
+            .product-detail {
+                grid-template-columns: 1fr;
+                gap: 40px;
+                padding: 24px;
+            }
+            
+            main {
+                padding: 20px;
+            }
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -17,32 +198,46 @@
     <main>
         <section class="product-detail">
             <div class="product-images">
-                <img src="../assets/images/blazer-placeholder.jpg" alt="Navy Blazer">
+                <!-- REAL Purple Blazer Image -->
+                <img id="main-product-image" 
+                     src="../assets/images/blazer.jpg" 
+                     alt="Purple Blazer"
+                     data-wishlize-garment="https://wishlize-cdn.s3.ap-south-1.amazonaws.com/garments/blazer.jpg">
             </div>
             
             <div class="product-info">
-                <h2>Classic Navy Blazer</h2>
+                <h2>Purple Wool Blazer</h2>
                 <p class="price">$299.99</p>
                 <p class="description">
-                    A timeless navy blazer perfect for any occasion. 
-                    Premium fabric with modern fit.
+                    Elevate your wardrobe with this premium purple wool blazer. 
+                    Crafted from Italian wool with a modern slim fit, perfect for 
+                    both professional settings and evening occasions.
                 </p>
                 
-                <!-- Wishlize widget will be integrated here -->
-                <div id="wishlize-widget-container">
-                    <p><em>Wishlize Virtual Try-On widget will be integrated here</em></p>
-                </div>
+                <!-- Wishlize Widget Container - Button will be injected here -->
+                <div id="wishlize-widget-container"></div>
                 
-                <button class="btn btn-primary">Add to Cart</button>
+                <button class="btn-primary">Add to Cart</button>
+                
+                <div class="product-meta">
+                    <h3>Product Details</h3>
+                    <ul>
+                        <li>Material: 100% Italian Wool</li>
+                        <li>Fit: Modern Slim Fit</li>
+                        <li>Color: Royal Purple</li>
+                        <li>Care: Dry Clean Only</li>
+                        <li>Origin: Made in Italy</li>
+                    </ul>
+                </div>
             </div>
         </section>
     </main>
     
     <footer>
-        <p>&copy; 2026 Wishlize Demo Store</p>
+        <p>&copy; 2026 Wishlize Demo Store | Powered by AWS Lambda & FASHN AI</p>
     </footer>
     
-    <!-- Widget script will be loaded here -->
-    <!-- <script src="../widget/build/wishlize-widget.js"></script> -->
+    <!-- Wishlize Widget Script -->
+    <script src="../assets/js/widget-simple.js"></script>
 </body>
 </html>

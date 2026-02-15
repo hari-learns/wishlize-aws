@@ -1,0 +1,59 @@
+# Environment variables - NEVER commit these!
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+.env.test
+
+# AWS credentials
+.aws/
+aws-credentials.json
+
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Serverless Framework
+.serverless/
+.build/
+.serverless-offline/
+
+# Lambda build artifacts
+*.zip
+*.tar.gz
+dist/
+build/
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# Widget build output
+widget/build/
+widget/dist/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

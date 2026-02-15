@@ -1,0 +1,72 @@
+service: wishlize-backend
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ap-south-1
+  stage: ${opt:stage, 'dev'}
+  
+  environment:
+    FASHN_API_KEY: ${env:FASHN_API_KEY}
+    AWS_REGION: ${env:AWS_REGION}
+    DYNAMO_TABLE: ${env:DYNAMO_TABLE}
+    S3_UPLOAD_BUCKET: wishlize-uploads
+    S3_RESULTS_BUCKET: wishlize-results
+    S3_CDN_BUCKET: wishlize-cdn
+  
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+          Resource:
+            - arn:aws:s3:::wishlize-uploads/*
+            - arn:aws:s3:::wishlize-results/*
+            - arn:aws:s3:::wishlize-cdn/*
+        - Effect: Allow
+          Action:
+            - rekognition:DetectFaces
+          Resource: '*'
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:Query
+          Resource:
+            - arn:aws:dynamodb:ap-south-1:*:table/WishlizeSessions
+  
+  logs:
+    restApi: true
+  
+  tracing:
+    lambda: true
+    apiGateway: true
+
+functions:
+  validatePhoto:
+    handler: handler.validatePhoto
+    memorySize: 512
+    timeout: 10
+    events:
+      - http:
+          path: validate-photo
+          method: post
+          cors: true
+  
+  processTryOn:
+    handler: handler.processTryOn
+    memorySize: 1024
+    timeout: 30
+    events:
+      - http:
+          path: process-tryon
+          method: post
+          cors: true
+
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin

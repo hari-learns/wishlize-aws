@@ -1,359 +1,183 @@
-# Wishlize Demo Build Plan - UPDATED STATUS
+# Wishlize Implementation Plan & Status (Single Source of Truth)
 
-| **Target** | Working Demo by March 5th, 2026 |
-|------------|---------------------------------|
-| **Article Deadline** | March 13th, 2026 (8:00 PM UTC) |
-| **Current Date** | February 15, 2026 |
-| **Days Remaining** | 18 Days |
+| Field | Value |
+|---|---|
+| Document Owner | Wishlize Engineering |
+| Current Date | February 22, 2026 |
+| Demo Target Date | March 5, 2026 |
+| Article Deadline | March 13, 2026, 8:00 PM UTC |
+| Days to Demo Target | 11 days |
+| Days to Article Deadline | ~19.8 days |
+| Version | 2.0.0 |
 
 ---
 
-## 📊 HIGH-LEVEL STATUS
+## 1) Executive Status
 
+The implementation is no longer in placeholder state. Core backend services, API handlers, widget flow, and demo-store embedding are all present in code.
+
+The main blocker is **quality/readiness**, not missing core implementation:
+- Functional implementation exists for the full simple flow (`get-upload-url` -> `validate-photo` -> `process-tryon` -> `status/{sessionId}`).
+- Test health is below release threshold and needs focused fixes.
+
+---
+
+## 2) Updated Metrics (as of February 22, 2026)
+
+### Implementation Metrics
+
+| Metric | Current Value | Source |
+|---|---:|---|
+| Docs files in `docs/` | 1 target (this file) | Consolidation scope |
+| API endpoints in `backend/serverless.yml` | 4 | `get-upload-url`, `validate-photo`, `process-tryon`, `status/{sessionId}` |
+| Core simple handlers implemented | 4/4 | `backend/handler-simple.js` |
+| Core backend service modules implemented | 4/4 | `photoCheck`, `fashnClient`, `s3Service`, `sessionStore-simple` |
+| Test files | 20 | `backend/__tests__/**` |
+| Defined test cases | 356 | grep count (`it`/`test`) |
+
+### Test Health Metrics
+
+| Metric | Current Value |
+|---|---:|
+| Jest test suites | 20 total |
+| Passing suites | 5 |
+| Failing suites | 15 |
+| Passing tests | 253 |
+| Failing tests | 90 |
+| Test pass rate | 73.76% |
+| Suite pass rate | 25.00% |
+
+Jest baseline command used:
+```bash
+cd backend
+NODE_OPTIONS=--unhandled-rejections=warn npx jest --runInBand
 ```
-PHASE 0: AWS Setup          ████████████████ 100% ✅ COMPLETE
-PHASE 1: Backend API        ████████░░░░░░░░  50% ⚠️  INFRA DONE, LOGIC PENDING
-PHASE 2: Widget             ████░░░░░░░░░░░░  25% ⚠️  STRUCTURE DONE, FUNCTIONALITY PENDING
-PHASE 3: Demo Store         ████████████░░░░  75% ✅ MOSTLY DONE
-PHASE 4: Article & Launch   ░░░░░░░░░░░░░░░░   0% ⏳ NOT STARTED
-```
 
-**Overall Progress: ~45%**
+Latest summary:
+- `Test Suites: 15 failed, 5 passed, 20 total`
+- `Tests: 90 failed, 253 passed, 343 total`
 
 ---
 
-## ✅ COMPLETED WORK
+## 3) Phase-by-Phase Status
 
-### Phase 0: AWS Pre-Configuration (100%)
-| Component | Status | Notes |
-|-----------|--------|-------|
-| IAM User (`wishlize-deploy`) | ✅ Done | AdministratorAccess, credentials configured |
-| S3 Buckets (4) | ✅ Done | uploads, results, cdn, demo store - all with CORS |
-| DynamoDB Table | ✅ Done | `WishlizeSessions` with email (PK), sessionId (SK) |
-| Cost Alarms | ✅ Done | $10 warning, $50 panic alerts |
-| AWS CLI | ✅ Done | Configured and tested |
+### Phase 0: AWS Setup
+**Status:** Mostly complete (based on repository configuration and existing deployment docs).
 
-### Phase 1: Infrastructure (100% - SCAFFOLDING COMPLETE)
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Serverless Framework | ✅ Done | Deployed to AWS |
-| Lambda Functions | ✅ Done | 2 functions deployed and responding |
-| API Gateway | ✅ Done | CORS enabled, CloudWatch logs active |
-| IAM Roles | ✅ Done | Least-privilege permissions configured |
-| X-Ray Tracing | ✅ Done | Enabled for Lambda + API Gateway |
-| Environment Variables | ✅ Done | FASHN_API_KEY configured |
+Evidence in repo:
+- Serverless provider/runtime/region configured.
+- IAM, tracing, env var defaults, and HTTP event config present.
 
-### Phase 3: Demo Store (75% - UI COMPLETE)
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Store Homepage | ✅ Done | `demo-store/index.html` working |
-| Product Page | ✅ Done | `demo-store/product/blazer.html` with widget placeholder |
-| CSS Styling | ✅ Done | Responsive design, mobile-friendly |
-| Widget Placeholder | ✅ Done | Dashed border container visible |
+### Phase 1: Backend API & Business Logic
+**Status:** Core implementation complete; validation hardening in progress.
 
-### Documentation & Testing (100%)
-| Component | Status | Notes |
-|-----------|--------|-------|
-| README.md | ✅ Done | Complete with setup/deployment instructions |
-| POST_DEPLOYMENT_TASKS.md | ✅ Done | AWS console configuration guide |
-| .gitignore | ✅ Done | Security patterns for secrets |
-| Test Suite | ✅ Done | 137 property-based tests passing |
-| Project Structure | ✅ Done | All directories and placeholder files created |
+Implemented:
+- `POST /get-upload-url`
+- `POST /validate-photo`
+- `POST /process-tryon`
+- `GET /status/{sessionId}`
+- IP-based sessions, quota handling, and state transitions.
+- FASHN integration with retry behavior.
+- Rekognition-based photo validation.
+- S3 upload/view URL generation with enhanced regional support.
 
----
+Current risk:
+- Multiple backend test suites are failing; must be resolved before release confidence is acceptable.
 
-## ⏳ PENDING WORK (CRITICAL PATH)
+### Phase 2: Widget
+**Status:** Functional simple flow implemented.
 
-### Phase 1: Backend Business Logic (0% - NEEDS IMPLEMENTATION)
+Implemented in `widget/src/widget-simple.js` and deployed variant in `demo-store/assets/js/widget-simple.js`:
+- Product image detection.
+- Trigger injection.
+- Modal with upload/preview/processing/result/error steps.
+- Direct S3 upload flow.
+- Backend API calls and client-side polling.
+- Quota/error display patterns.
 
-#### 1.1 Photo Validator Service
-**File:** `backend/validators/photoCheck.js`  
-**Status:** ❌ PLACEHOLDER ONLY  
-**Current Code:** Throws "Not yet implemented" error  
-**What Needs to Be Done:**
-- [ ] Integrate AWS Rekognition `detectFaces()`
-- [ ] Check face confidence (> 90%)
-- [ ] Detect bounding box ratio (height/width > 2.0 for full body)
-- [ ] Check image quality (blur detection)
-- [ ] Return: `{ valid, message, type: "full_body" | "half_body" | "invalid" }`
+Current risk:
+- Source/deployed variants should stay in sync; recent status call behavior differs between source and deployed file.
 
-**Estimated Effort:** 1 Day
+### Phase 3: Demo Store Integration
+**Status:** Implemented for blazer flow.
+
+Implemented:
+- Product page contains widget container.
+- Widget script is actively loaded.
+- Garment URL data attribute is present on product image.
+
+### Phase 4: Article & Launch
+**Status:** Not started in repo artifacts.
+
+Needed:
+- Draft article.
+- Record demo video.
+- Final submission and launch checklist.
 
 ---
 
-#### 1.2 FASHN API Integration
-**File:** `backend/services/fashnClient.js`  
-**Status:** ❌ PLACEHOLDER ONLY  
-**Current Code:** Throws "Not yet implemented" error  
-**What Needs to Be Done:**
-- [ ] Create FASHN API client with authentication
-- [ ] POST to `https://api.fashn.ai/v1/run` with person + garment images
-- [ ] Implement polling logic (check status every 2 seconds)
-- [ ] Handle response: `status: "completed"` → return result URL
-- [ ] Error handling for failed generations
+## 4) Failing Test Suites (Current)
 
-**Estimated Effort:** 1-2 Days
-
----
-
-#### 1.3 S3 Service
-**File:** `backend/services/s3Service.js`  
-**Status:** ❌ PLACEHOLDER ONLY  
-**Current Code:** Throws "Not yet implemented" error  
-**What Needs to Be Done:**
-- [ ] Generate presigned POST URLs for direct browser upload
-- [ ] Generate presigned GET URLs for viewing results
-- [ ] Handle file validation (size, format)
-
-**Estimated Effort:** 0.5 Day
+1. `backend/__tests__/property/lambda-handler-responses.property.test.js`
+2. `backend/__tests__/security/rate-limiting.test.js`
+3. `backend/__tests__/unit/services/s3Service.test.js`
+4. `backend/__tests__/unit/services/sessionStore.test.js`
+5. `backend/__tests__/property/serverless-config.property.test.js`
+6. `backend/__tests__/unit/validators/photoCheck.test.js`
+7. `backend/__tests__/property/configuration-files.property.test.js`
+8. `backend/__tests__/security/input-validation.test.js`
+9. `backend/__tests__/integration/s3-global-optimization.integration.test.js`
+10. `backend/__tests__/property/s3-upload-retry.property.test.js`
+11. `backend/__tests__/property/s3-dynamic-reload.property.test.js`
+12. `backend/__tests__/property/s3-configuration-consistency.property.test.js`
+13. `backend/__tests__/property/s3-region-detection.property.test.js`
+14. `backend/__tests__/property/s3-endpoint-correctness.property.test.js`
+15. `backend/__tests__/property/demo-store-widget-integration.property.test.js`
 
 ---
 
-#### 1.4 Lambda Handler Logic
-**File:** `backend/handler.js`  
-**Status:** ⚠️ SKELETON ONLY  
-**Current Code:** Returns placeholder response  
-**What Needs to Be Done:**
+## 5) Critical Path to Demo-Ready
 
-**For `validatePhoto`:**
-- [ ] Parse request body (email, imageData)
-- [ ] Call photoCheck.js for validation
-- [ ] Save session to DynamoDB
-- [ ] Return validation results
-
-**For `processTryOn`:**
-- [ ] Parse request (email, sessionId, garmentUrl)
-- [ ] Check quota in DynamoDB (tries_left)
-- [ ] Call FASHN API
-- [ ] Save result URL to DynamoDB
-- [ ] Return result + tries_remaining
-
-**Estimated Effort:** 1 Day
+1. Stabilize tests around current no-email/simple architecture.
+2. Fix middleware test assumptions requiring explicit Lambda context handling.
+3. Align S3 optimization tests with actual region-resolution behavior.
+4. Align validator security tests with current validation policy (or tighten validators to match test intent).
+5. Sync widget source/deployed endpoint conventions for status polling.
 
 ---
 
-#### 1.5 New Endpoint: Get Upload URL
-**File:** `backend/handler.js` (new function)  
-**Status:** ❌ NOT CREATED  
-**What Needs to Be Done:**
-- [ ] Create `getUploadUrl` Lambda function
-- [ ] Generate presigned S3 POST URL
-- [ ] Return `{ uploadUrl, publicUrl, fields }`
+## 6) Next Execution Plan (February 22 -> March 5)
 
-**Estimated Effort:** 0.5 Day
+### Sprint A (Immediate: 2-3 days)
+- Repair high-signal backend suite failures:
+  - `rate-limiting.test.js`
+  - `lambda-handler-responses.property.test.js`
+  - `input-validation.test.js`
 
-**TOTAL BACKEND LOGIC EFFORT: ~4 Days**
+### Sprint B (Following: 2-3 days)
+- Repair S3 and config related suite failures:
+  - `s3Service.test.js`
+  - `s3-global-optimization.integration.test.js`
+  - `s3-*` property suites
+  - `serverless-config.property.test.js`
 
----
-
-### Phase 2: Widget Functionality (0% - NEEDS IMPLEMENTATION)
-
-#### 2.1 Widget Core Logic
-**File:** `widget/src/widget.js`  
-**Status:** ⚠️ CLASS STRUCTURE ONLY  
-**Current Code:** Placeholder class with empty methods  
-**What Needs to Be Done:**
-- [ ] Auto-detect product image from page (meta tag, img class, or data attribute)
-- [ ] Inject "Try It On" button into product page
-- [ ] Handle button click → open modal
-- [ ] Use Shadow DOM to avoid CSS conflicts
-
-**Estimated Effort:** 1 Day
+### Sprint C (Final: 1-2 days)
+- Widget/source sync pass.
+- End-to-end regression pass (upload -> validate -> try-on -> status).
+- Freeze for demo and article asset capture.
 
 ---
 
-#### 2.2 Modal UI Functionality
-**File:** `widget/src/modal.html` + `widget.js`  
-**Status:** ⚠️ HTML TEMPLATE ONLY  
-**Current Code:** Static HTML, no JavaScript behavior  
-**What Needs to Be Done:**
-- [ ] Render modal template into Shadow DOM
-- [ ] Implement drag & drop for photo upload
-- [ ] Show image preview
-- [ ] Email input field
-- [ ] Consent checkbox
-- [ ] Loading states with progress bar
-- [ ] Result view (split screen original vs AI)
-- [ ] Error message displays
+## 7) Done Criteria for March 5 Demo
 
-**Estimated Effort:** 2 Days
+- All 4 API endpoints verified through one real end-to-end run.
+- Test pass rate >= 95% and no flaky critical-path suite.
+- Demo-store blazer page executes complete try-on journey without manual patching.
+- Known failure modes produce user-safe error responses.
 
 ---
 
-#### 2.3 Widget API Integration
-**File:** `widget/src/widget.js`  
-**Status:** ❌ NOT IMPLEMENTED  
-**What Needs to Be Done:**
-- [ ] Call `GET /get-upload-url` → get presigned URL
-- [ ] Upload photo directly to S3 (browser → S3)
-- [ ] Call `POST /validate-photo` → validate
-- [ ] Call `POST /process-tryon` → start generation
-- [ ] Poll for result or wait for webhook
-- [ ] Display result image
+## 8) Notes
 
-**Estimated Effort:** 1-2 Days
-
----
-
-#### 2.4 Widget Build & Deploy
-**Status:** ❌ NOT DONE  
-**What Needs to Be Done:**
-- [ ] Minify widget.js
-- [ ] Upload to `s3://wishlize-cdn/widget.js`
-- [ ] Make public-read
-- [ ] Test loading from CDN
-
-**Estimated Effort:** 0.5 Day
-
-**TOTAL WIDGET EFFORT: ~4-5 Days**
-
----
-
-### Phase 3: Demo Store Integration (25% - WIDGET EMBED PENDING)
-
-#### 3.1 Widget Embed
-**File:** `demo-store/product/blazer.html`  
-**Status:** ❌ COMMENTED OUT  
-**What Needs to Be Done:**
-- [ ] Uncomment widget script tag
-- [ ] Add `data-garment-image` attribute
-- [ ] Test widget loads on product page
-- [ ] Verify button appears below product image
-
-**Estimated Effort:** 0.5 Day
-
-#### 3.2 Ghost Page Features
-**Status:** ❌ NOT DONE  
-**What Needs to Be Done:**
-- [ ] Add password protection or obscure URL
-- [ ] Add "Powered by AWS Lambda" badge
-- [ ] Add quota indicator ("3 free try-ons remaining")
-
-**Estimated Effort:** 0.5 Day
-
-**TOTAL DEMO STORE EFFORT: ~1 Day**
-
----
-
-### Phase 4: Article & Launch (0% - NOT STARTED)
-
-| Task | Status | Notes |
-|------|--------|-------|
-| Article Draft | ❌ Not Started | Due March 13th |
-| Demo Video | ❌ Not Started | 2 minutes |
-| AWS Builder Submission | ❌ Not Started | Tag #aideas-2025 |
-| Vote Campaign | ❌ Not Started | LinkedIn, WhatsApp, HN |
-
-**Estimated Effort: 3-4 Days**
-
----
-
-## 📋 COMPLETION CHECKLIST
-
-### Before We Have a Working Demo:
-
-**Backend (Phase 1 Logic):**
-- [ ] photoCheck.js validates photos with Rekognition
-- [ ] fashnClient.js calls FASHN API successfully
-- [ ] s3Service.js generates presigned URLs
-- [ ] handler.js connects all services
-- [ ] `getUploadUrl` endpoint created
-- [ ] End-to-end test passes (upload → validate → try-on → result)
-
-**Widget (Phase 2):**
-- [ ] Widget loads on product page
-- [ ] "Try It On" button visible
-- [ ] Modal opens with drag-drop
-- [ ] Photo uploads to S3
-- [ ] Validation shows pass/fail
-- [ ] Try-on generates result
-- [ ] Result displays in modal
-
-**Integration (Phase 3):**
-- [ ] Widget embedded in demo store
-- [ ] Full flow works on mobile
-- [ ] Quota system enforced (3 per email)
-
-**Polish:**
-- [ ] Error handling works
-- [ ] Loading states smooth
-- [ ] Mobile responsive
-- [ ] Article written
-- [ ] Video recorded
-
----
-
-## 🎯 RECOMMENDED IMPLEMENTATION ORDER
-
-### Week 1 (Feb 16-22): Backend Logic
-**Day 1-2:** Photo Validator + S3 Service  
-**Day 3-4:** FASHN API Integration  
-**Day 5-6:** Handler Logic + Testing  
-**Day 7:** Buffer/Debugging
-
-### Week 2 (Feb 23-Mar 1): Widget
-**Day 8-9:** Widget Core + Modal UI  
-**Day 10-11:** API Integration  
-**Day 12:** Build & Deploy to S3  
-**Day 13:** Demo Store Integration + Testing
-
-### Week 3 (Mar 2-5): Polish & Launch
-**Day 14-15:** Bug fixes, mobile testing  
-**Day 16-17:** Article draft + video  
-**Day 18:** AWS Builder submission + launch  
-**Day 19-20:** Vote campaign
-
----
-
-## 🚨 CRITICAL DEPENDENCIES
-
-1. **FASHN API Key** - Already configured ✅
-2. **AWS Credentials** - Already configured ✅
-3. **S3 CORS** - Already configured ✅
-4. **Test Images** - Need good blazer image for testing
-
----
-
-## 💡 WHAT WE CAN TEST RIGHT NOW
-
-### ✅ Can Test Immediately:
-- Lambda endpoints respond (but return placeholders)
-- Demo store pages load in browser
-- CloudWatch logs appear
-- CORS works from browser
-
-### ❌ Cannot Test Until Logic Implemented:
-- Photo validation with Rekognition
-- FASHN virtual try-on generation
-- File upload to S3
-- Quota enforcement
-- Widget interaction
-- End-to-end flow
-
----
-
-## 🎯 NEXT IMMEDIATE ACTION
-
-**What do you want to tackle first?**
-
-**Option A: Backend Logic First**
-- Start with photoCheck.js (Rekognition)
-- Then FASHN integration
-- Most complex but enables everything else
-
-**Option B: Widget First**
-- Make widget.js functional
-- Create modal interactions
-- Visual progress, but can't test without backend
-
-**Option C: Parallel (Recommended)**
-- I work on backend logic
-- You work on widget styling/modal
-- Merge when both ready
-
-**Reply with your choice and I'll start immediately.**
-
----
-
-> **Last Updated:** February 15, 2026  
-> **Status:** Infrastructure Complete, Implementation Phase Ready
+- This file replaces all previous planning/status docs in `docs/`.
+- Historical versions were removed intentionally to avoid conflicting status signals.

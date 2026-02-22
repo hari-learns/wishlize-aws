@@ -3,240 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Purple Blazer - Wishlize Demo Store</title>
+    <title>Classic Navy Blazer | Wishlize</title>
+    <link rel="stylesheet" href="../assets/css/store.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* Local overrides for the product page layout if needed */
+        .product-page-nav {
+            padding: 1rem 4rem;
         }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f8f9fa;
-            color: #333;
-        }
-        
-        header {
-            background: #1a1a2e;
-            color: white;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        header h1 {
-            font-size: 24px;
-            font-weight: 600;
-        }
-        
-        header a {
-            color: white;
-            text-decoration: none;
-            font-size: 14px;
-        }
-        
-        main {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 60px 40px;
-        }
-        
-        .product-detail {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 80px;
-            background: white;
-            border-radius: 16px;
-            padding: 40px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        }
-        
-        .product-images {
-            position: relative;
-        }
-        
-        .product-images img {
-            width: 100%;
-            height: auto;
-            border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-        }
-        
-        .product-info h2 {
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            color: #1a1a2e;
-        }
-        
-        .price {
-            font-size: 28px;
-            font-weight: 700;
-            color: #6b4ee6;
-            margin-bottom: 20px;
-        }
-        
-        .description {
-            font-size: 16px;
-            line-height: 1.6;
-            color: #666;
-            margin-bottom: 30px;
-        }
-        
-        /* Wishlize Widget Button */
-        #wishlize-widget-container {
-            margin: 24px 0;
-            min-height: 60px;
-        }
-        
-        #wishlize-widget-container:empty:before {
-            content: "Loading...";
-            display: block;
-            padding: 16px;
-            text-align: center;
-            color: #999;
-            font-size: 14px;
-        }
-        
-        .wishlize-trigger-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 18px 36px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .wishlize-trigger-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
-        }
-        
-        .btn-primary {
-            background: #1a1a2e;
-            color: white;
-            padding: 16px 36px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 12px;
-            transition: background 0.2s;
-        }
-        
-        .btn-primary:hover {
-            background: #2d2d44;
-        }
-        
-        .product-meta {
-            margin-top: 40px;
-            padding-top: 30px;
-            border-top: 1px solid #eee;
-        }
-        
-        .product-meta h3 {
-            font-size: 18px;
-            margin-bottom: 16px;
-            color: #1a1a2e;
-        }
-        
-        .product-meta ul {
-            list-style: none;
-            color: #666;
-            line-height: 2;
-        }
-        
-        .product-meta li:before {
-            content: "✓ ";
-            color: #6b4ee6;
-            font-weight: bold;
-            margin-right: 8px;
-        }
-        
-        footer {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-            border-top: 1px solid #eee;
-            margin-top: 60px;
-        }
-        
-        @media (max-width: 768px) {
-            .product-detail {
-                grid-template-columns: 1fr;
-                gap: 40px;
-                padding: 24px;
-            }
-            
-            main {
-                padding: 20px;
+        @media (max-width: 1024px) {
+            .product-page-nav {
+                padding: 1rem 2rem;
             }
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Wishlize Demo Store</h1>
-        <nav>
-            <a href="../index.html">← Back to Store</a>
-        </nav>
-    </header>
-    
+    <nav class="main-nav product-page-nav">
+        <a href="../index.html" class="nav-logo">WISHLIZE.</a>
+        <div class="nav-links">
+            <a href="../index.html">Back to Collection</a>
+        </div>
+    </nav>
+
     <main>
-        <section class="product-detail">
-            <div class="product-images">
-                <!-- REAL Purple Blazer Image -->
+        <div class="product-detail-container">
+            <div class="product-gallery">
                 <img id="main-product-image" 
                      src="../assets/images/blazer.jpg" 
-                     alt="Purple Blazer"
+                     alt="Classic Navy Blazer"
                      data-wishlize-garment="https://wishlize-cdn-mumbai.s3.ap-south-1.amazonaws.com/garments/blazer.jpg">
             </div>
-            
-            <div class="product-info">
-                <h2>Purple Wool Blazer</h2>
-                <p class="price">$299.99</p>
-                <p class="description">
-                    Elevate your wardrobe with this premium purple wool blazer. 
-                    Crafted from Italian wool with a modern slim fit, perfect for 
-                    both professional settings and evening occasions.
+
+            <div class="product-info-sidebar">
+                <div class="product-meta-header">
+                    <h2 class="serif">Classic Navy Blazer</h2>
+                    <p class="price">$299.99</p>
+                </div>
+
+                <p class="description-text">
+                    A cornerstone of the modern wardrobe. This blazer is meticulously crafted from premium Italian wool, featuring a structured shoulder and a slightly tapered waist for a silhouette that is both sharp and comfortable.
                 </p>
-                
-                <!-- Wishlize Widget Container - Button will be injected here -->
-                <div id="wishlize-widget-container"></div>
-                
-                <button class="btn-primary">Add to Cart</button>
-                
-                <div class="product-meta">
-                    <h3>Product Details</h3>
-                    <ul>
-                        <li>Material: 100% Italian Wool</li>
-                        <li>Fit: Modern Slim Fit</li>
-                        <li>Color: Royal Purple</li>
-                        <li>Care: Dry Clean Only</li>
-                        <li>Origin: Made in Italy</li>
+
+                <!-- Wishlize Widget Container -->
+                <div id="wishlize-widget-container">
+                    <!-- The script will inject the button here, but we can style it or provide a placeholder that matches our new theme -->
+                </div>
+
+                <button class="btn-secondary-outline">Add to Shopping Bag</button>
+
+                <div style="margin-top: 4rem; border-top: 1px solid var(--border-soft); padding-top: 2rem;">
+                    <h4 style="text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 1rem;">Specifications</h4>
+                    <ul style="list-style: none; font-size: 0.9rem; color: var(--text-muted); line-height: 2;">
+                        <li>• 100% Virgin Italian Wool</li>
+                        <li>• Navy Twill Weave</li>
+                        <li>• Double-Vented Back</li>
+                        <li>• Real Horn Buttons</li>
                     </ul>
                 </div>
             </div>
-        </section>
+        </div>
     </main>
-    
+
     <footer>
-        <p>&copy; 2026 Wishlize Demo Store | Powered by AWS Lambda & FASHN AI</p>
+        <span class="footer-logo">WISHLIZE.</span>
+        <p class="footer-credits">&copy; 2026 Wishlize. Virtual Try-On powered by FASHN AI.</p>
     </footer>
-    
+
     <!-- Wishlize Widget Script -->
     <script src="../assets/js/widget-simple.js"></script>
 </body>

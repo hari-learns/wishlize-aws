@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wishlize Diagnostic</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #0f0; }
+        .log { margin: 5px 0; padding: 5px; background: #2d2d44; border-radius: 4px; }
+        .error { color: #f44; }
+        .warn { color: #fa0; }
+        .info { color: #0af; }
+        h1 { color: #fff; }
+        button { padding: 10px 20px; margin: 10px 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Wishlize Diagnostic Tool</h1>
+    <p>Open browser console (F12) to see detailed network interception logs</p>
+    <div id="logs"></div>
+    
+    <script>
+        const logs = document.getElementById('logs');
+        
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logs.appendChild(div);
+        }
+        
+        // Intercept ALL fetch requests
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+            const url = args[0];
+            log(`Fetch: ${url}`, 'info');
+            if (url.includes('null')) {
+                log(`⚠️ NULL DETECTED in fetch: ${url}`, 'error');
+                console.trace('Fetch with null');
+            }
+            return originalFetch.apply(this, args);
+        };
+        
+        // Intercept ALL XMLHttpRequest
+        const originalOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url, ...args) {
+            log(`XHR: ${method} ${url}`, 'info');
+            if (url.includes('null')) {
+                log(`⚠️ NULL DETECTED in XHR: ${url}`, 'error');
+                console.trace('XHR with null');
+            }
+            return originalOpen.call(this, method, url, ...args);
+        };
+        
+        // Intercept image loads
+        const originalImageSrc = Object.getOwnPropertyDescriptor(Image.prototype, 'src');
+        Object.defineProperty(Image.prototype, 'src', {
+            set: function(url) {
+                log(`Image load: ${url}`, 'info');
+                if (url && url.includes('null')) {
+                    log(`⚠️ NULL DETECTED in image src: ${url}`, 'error');
+                    console.trace('Image with null src');
+                }
+                return originalImageSrc.set.call(this, url);
+            },
+            get: originalImageSrc.get
+        });
+        
+        // Monitor ALL script errors
+        window.addEventListener('error', (e) => {
+            log(`Script Error: ${e.message} at ${e.filename}:${e.lineno}`, 'error');
+        });
+        
+        // Monitor unhandled promises
+        window.addEventListener('unhandledrejection', (e) => {
+            log(`Unhandled Promise: ${e.reason}`, 'error');
+        });
+        
+        // Check for common extension signatures
+        log('Checking for browser extensions...', 'info');
+        setTimeout(() => {
+            const scripts = document.querySelectorAll('script[src]');
+            scripts.forEach(s => {
+                if (s.src.includes('chrome-extension') || s.src.includes('moz-extension')) {
+                    log(`Extension script detected: ${s.src}`, 'warn');
+                }
+            });
+        }, 1000);
+        
+        log('Diagnostic active - intercepting all network requests...', 'info');
+    </script>
+    
+    <!-- Load the actual widget to see what it does -->
+    <h2>Test Widget Integration:</h2>
+    <div id="wishlize-widget-container"></div>
+    <img id="main-product-image" 
+         src="assets/images/blazer.jpg" 
+         alt="Test Product"
+         data-wishlize-garment="https://wishlize-cdn.s3.ap-south-1.amazonaws.com/garments/blazer.jpg">
+    
+    <script src="assets/js/widget-simple.js"></script>
+</body>
+</html>

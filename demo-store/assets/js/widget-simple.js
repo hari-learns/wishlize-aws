@@ -110,38 +110,40 @@
     const button = document.createElement('button');
     button.className = 'wishlize-trigger-btn';
     button.innerHTML = `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
       </svg>
-      <span>Try It On</span>
+      <span>Visualise on Me</span>
     `;
     button.style.cssText = `
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%);
       color: white;
       border: none;
-      padding: 16px 32px;
-      border-radius: 10px;
-      font-size: 16px;
+      padding: 1.25rem 2.5rem;
+      border-radius: 50px;
+      font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
       width: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      gap: 12px;
+      box-shadow: 0 10px 20px rgba(255, 95, 109, 0.2);
       margin: 20px 0;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.5px;
     `;
     
     button.addEventListener('mouseenter', () => {
-      button.style.transform = 'translateY(-2px)';
-      button.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.5)';
+      button.style.transform = 'translateY(-3px)';
+      button.style.boxShadow = '0 15px 30px rgba(255, 95, 109, 0.3)';
     });
     
     button.addEventListener('mouseleave', () => {
       button.style.transform = 'translateY(0)';
-      button.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
+      button.style.boxShadow = '0 10px 20px rgba(255, 95, 109, 0.2)';
     });
 
     button.addEventListener('click', openModal);
@@ -189,7 +191,11 @@
           <div class="wishlize-modal-content">
             <div class="wishlize-modal-header">
               <h2>Virtual Try-On</h2>
-              <button class="wishlize-close-btn" id="wishlize-close">&times;</button>
+              <button class="wishlize-close-btn" id="wishlize-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
             </div>
 
             <div class="wishlize-modal-body">
@@ -199,20 +205,24 @@
                 <div class="wishlize-upload-area" id="wishlize-dropzone">
                   <input type="file" id="wishlize-file-input" accept="image/jpeg,image/png" hidden>
                   <div class="upload-content">
-                    <span class="upload-icon">📸</span>
+                    <div class="upload-icon-wrapper">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FF5F6D" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                      </svg>
+                    </div>
                     <p class="upload-text">Upload your photo</p>
                     <p class="upload-subtext">Drag & drop or click to browse</p>
-                    <p class="upload-hint">JPG or PNG, max 10MB</p>
+                    <p class="upload-hint">JPG or PNG • Max 10MB</p>
                   </div>
                 </div>
                 
                 <div class="wishlize-photo-tips">
-                  <h4>💡 Tips for best results:</h4>
+                  <h4>Tips for best results</h4>
                   <ul>
                     <li>Stand straight facing the camera</li>
-                    <li>Use good lighting</li>
+                    <li>Ensure good, natural lighting</li>
                     <li>Full body or half body photo</li>
-                    <li>Plain background works best</li>
+                    <li>Plain background recommended</li>
                   </ul>
                 </div>
               </div>
@@ -231,44 +241,54 @@
               <!-- Processing Step -->
               <div id="wishlize-step-processing" class="wishlize-step" style="display: none;">
                 <div class="wishlize-processing-animation">
-                  <div class="spinner"></div>
+                  <div class="spinner-wrapper">
+                    <div class="spinner"></div>
+                  </div>
                   <div class="processing-text">
                     <h3>Creating your try-on...</h3>
-                    <p id="wishlize-status-text">Uploading...</p>
+                    <p id="wishlize-status-text">Uploading photo</p>
                   </div>
                 </div>
                 <div class="wishlize-progress-bar">
                   <div class="wishlize-progress-fill" id="wishlize-progress"></div>
                 </div>
-                <p class="processing-note">This takes about 30-60 seconds</p>
+                <p class="processing-note">This usually takes about 30-60 seconds</p>
               </div>
 
               <!-- Result Step -->
               <div id="wishlize-step-result" class="wishlize-step" style="display: none;">
                 <div class="wishlize-result-comparison">
                   <div class="comparison-item">
-                    <label>You</label>
-                    <img id="wishlize-result-original" alt="Original">
+                    <label>Original</label>
+                    <div class="img-frame">
+                      <img id="wishlize-result-original" alt="Original">
+                    </div>
                   </div>
-                  <div class="comparison-arrow">→</div>
+                  <div class="comparison-arrow">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2">
+                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                  </div>
                   <div class="comparison-item">
-                    <label>Try-On</label>
-                    <img id="wishlize-result-final" alt="Result">
+                    <label>Wishlized</label>
+                    <div class="img-frame primary-frame">
+                      <img id="wishlize-result-final" alt="Result">
+                    </div>
                   </div>
                 </div>
                 
                 <div class="wishlize-result-actions">
                   <button class="wishlize-btn wishlize-btn-secondary" id="wishlize-try-another">Try Another Photo</button>
-                  <a class="wishlize-btn wishlize-btn-primary" id="wishlize-download" download>Download</a>
+                  <a class="wishlize-btn wishlize-btn-primary" id="wishlize-download" download>Download Result</a>
                 </div>
               </div>
 
               <!-- Error Step -->
               <div id="wishlize-step-error" class="wishlize-step" style="display: none;">
                 <div class="wishlize-error-message">
-                  <span class="error-icon">⚠️</span>
-                  <h3 id="wishlize-error-title">Oops!</h3>
-                  <p id="wishlize-error-text">Something went wrong</p>
+                  <div class="error-icon-wrapper">⚠️</div>
+                  <h3 id="wishlize-error-title">Unable to Process</h3>
+                  <p id="wishlize-error-text">Something went wrong during the visualisation.</p>
                 </div>
                 <button class="wishlize-btn wishlize-btn-primary" id="wishlize-retry">Try Again</button>
               </div>
@@ -283,6 +303,8 @@
   function getModalCSS() {
     return `
       <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
         .wishlize-modal {
           display: none;
           position: fixed;
@@ -291,9 +313,10 @@
           width: 100%;
           height: 100%;
           z-index: 999999;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-family: 'Inter', -apple-system, sans-serif;
           opacity: 0;
-          transition: opacity 0.3s ease;
+          transition: opacity 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+          color: #1a1a1a;
         }
 
         .wishlize-modal-overlay {
@@ -302,8 +325,8 @@
           left: 0;
           width: 100%;
           height: 100%;
-          background: rgba(0, 0, 0, 0.6);
-          backdrop-filter: blur(4px);
+          background: rgba(255, 255, 255, 0.8);
+          backdrop-filter: blur(12px);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -312,183 +335,201 @@
 
         .wishlize-modal-content {
           background: white;
-          border-radius: 16px;
-          max-width: 550px;
+          border-radius: 24px;
+          max-width: 600px;
           width: 100%;
           max-height: 90vh;
           overflow-y: auto;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.1);
+          border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .wishlize-modal-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 24px 24px 16px;
-          border-bottom: 1px solid #e5e7eb;
+          padding: 32px 32px 24px;
         }
 
         .wishlize-modal-header h2 {
           margin: 0;
-          font-size: 22px;
+          font-size: 1.5rem;
           font-weight: 700;
-          color: #1f2937;
+          letter-spacing: -0.5px;
         }
 
         .wishlize-close-btn {
-          background: #f3f4f6;
+          background: transparent;
           border: none;
-          font-size: 24px;
           cursor: pointer;
-          color: #6b7280;
-          width: 36px;
-          height: 36px;
-          border-radius: 8px;
+          color: #999;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
+          transition: all 0.2s;
+        }
+
+        .wishlize-close-btn:hover {
+          background: #f5f5f5;
+          color: #1a1a1a;
         }
 
         .wishlize-modal-body {
-          padding: 24px;
+          padding: 0 32px 32px;
         }
 
         .wishlize-upload-area {
-          border: 3px dashed #d1d5db;
-          border-radius: 12px;
-          padding: 48px 24px;
+          border: 2px dashed #eee;
+          border-radius: 20px;
+          padding: 60px 24px;
           text-align: center;
           cursor: pointer;
-          transition: all 0.3s;
-          background: #f9fafb;
+          transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+          background: #fafafa;
         }
 
         .wishlize-upload-area:hover, .wishlize-upload-area.dragover {
-          border-color: #667eea;
-          background: #eef2ff;
+          border-color: #FF5F6D;
+          background: #fffafa;
+          transform: scale(1.01);
         }
 
-        .upload-icon { font-size: 48px; display: block; margin-bottom: 12px; }
-        .upload-text { font-size: 18px; font-weight: 600; color: #374151; margin: 0 0 4px; }
-        .upload-subtext { font-size: 14px; color: #6b7280; margin: 0 0 8px; }
-        .upload-hint { font-size: 12px; color: #9ca3af; margin: 0; }
+        .upload-icon-wrapper { margin-bottom: 20px; }
+        .upload-text { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
+        .upload-subtext { font-size: 0.9rem; color: #666; margin-bottom: 12px; }
+        .upload-hint { font-size: 0.8rem; color: #999; }
 
         .wishlize-photo-tips {
-          margin-top: 24px;
-          padding: 16px;
-          background: #f3f4f6;
-          border-radius: 8px;
+          margin-top: 32px;
+          padding: 24px;
+          background: #fbfbfb;
+          border-radius: 16px;
         }
 
-        .wishlize-photo-tips h4 { margin: 0 0 12px; font-size: 14px; color: #374151; }
-        .wishlize-photo-tips ul { margin: 0; padding-left: 20px; font-size: 13px; color: #6b7280; }
-        .wishlize-photo-tips li { margin-bottom: 4px; }
+        .wishlize-photo-tips h4 { margin: 0 0 16px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: #1a1a1a; }
+        .wishlize-photo-tips ul { margin: 0; padding-left: 0; list-style: none; font-size: 0.9rem; color: #666; }
+        .wishlize-photo-tips li { margin-bottom: 8px; position: relative; padding-left: 20px; }
+        .wishlize-photo-tips li:before { content: "•"; position: absolute; left: 0; color: #FF5F6D; font-weight: bold; }
 
         .wishlize-preview-container {
-          border-radius: 12px;
+          border-radius: 16px;
           overflow: hidden;
-          background: #f3f4f6;
-          margin-bottom: 16px;
+          background: #f0f0f0;
+          margin-bottom: 24px;
+          aspect-ratio: 3/4;
         }
 
         .wishlize-preview-container img {
           width: 100%;
-          max-height: 350px;
-          object-fit: contain;
-          display: block;
+          height: 100%;
+          object-fit: cover;
         }
 
         .preview-actions {
           display: flex;
-          gap: 12px;
+          gap: 16px;
         }
 
         .wishlize-processing-animation {
           text-align: center;
-          padding: 40px 20px;
+          padding: 60px 20px;
         }
 
+        .spinner-wrapper { margin-bottom: 32px; }
         .spinner {
-          width: 60px;
-          height: 60px;
-          border: 4px solid #e5e7eb;
-          border-top-color: #667eea;
+          width: 48px;
+          height: 48px;
+          border: 3px solid #f0f0f0;
+          border-top-color: #FF5F6D;
           border-radius: 50%;
-          animation: spin 1s linear infinite;
-          margin: 0 auto 24px;
+          animation: spin 1s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite;
+          margin: 0 auto;
         }
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .processing-text h3 { margin: 0 0 8px; font-size: 18px; color: #374151; }
-        .processing-text p { margin: 0; color: #6b7280; font-size: 14px; }
+        .processing-text h3 { margin: 0 0 8px; font-size: 1.25rem; font-weight: 600; }
+        .processing-text p { margin: 0; color: #666; font-size: 0.95rem; }
 
         .wishlize-progress-bar {
-          height: 8px;
-          background: #e5e7eb;
-          border-radius: 4px;
+          height: 6px;
+          background: #f0f0f0;
+          border-radius: 10px;
           overflow: hidden;
-          margin: 20px 0 12px;
+          margin: 32px 0 16px;
         }
 
         .wishlize-progress-fill {
           height: 100%;
-          background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(90deg, #FF5F6D 0%, #FFC371 100%);
           width: 0%;
           transition: width 0.5s ease;
         }
 
-        .processing-note { text-align: center; font-size: 12px; color: #9ca3af; }
+        .processing-note { text-align: center; font-size: 0.8rem; color: #999; }
 
         .wishlize-result-comparison {
           display: flex;
           align-items: center;
-          gap: 16px;
-          margin-bottom: 24px;
+          gap: 20px;
+          margin-bottom: 32px;
         }
 
         .comparison-item { flex: 1; text-align: center; }
-        .comparison-item label { display: block; font-size: 12px; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; }
-        .comparison-item img { width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; background: #f3f4f6; }
-        .comparison-arrow { font-size: 24px; color: #9ca3af; }
+        .comparison-item label { display: block; font-size: 0.75rem; font-weight: 700; color: #999; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .img-frame { border-radius: 16px; overflow: hidden; background: #f0f0f0; aspect-ratio: 3/4; }
+        .primary-frame { box-shadow: 0 20px 40px rgba(255, 95, 109, 0.15); border: 2px solid #fff; }
+        .img-frame img { width: 100%; height: 100%; object-fit: cover; }
+        .comparison-arrow { flex-shrink: 0; }
 
-        .wishlize-result-actions { display: flex; gap: 12px; }
+        .wishlize-result-actions { display: flex; gap: 16px; }
 
-        .wishlize-error-message { text-align: center; padding: 40px 20px; }
-        .error-icon { font-size: 48px; display: block; margin-bottom: 16px; }
-        .wishlize-error-message h3 { margin: 0 0 8px; color: #dc2626; font-size: 18px; }
-        .wishlize-error-message p { margin: 0; color: #6b7280; font-size: 14px; }
+        .wishlize-error-message { text-align: center; padding: 60px 20px; }
+        .error-icon-wrapper { font-size: 40px; margin-bottom: 24px; }
+        .wishlize-error-message h3 { margin: 0 0 12px; font-size: 1.25rem; font-weight: 700; }
+        .wishlize-error-message p { margin: 0; color: #666; font-size: 0.95rem; line-height: 1.6; }
 
         .wishlize-btn {
           flex: 1;
-          padding: 12px 24px;
-          border-radius: 8px;
-          font-size: 14px;
+          padding: 1rem 1.5rem;
+          border-radius: 50px;
+          font-size: 0.95rem;
           font-weight: 600;
           cursor: pointer;
           border: none;
-          transition: all 0.2s;
+          transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
           text-decoration: none;
-          display: inline-block;
-          text-align: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Inter', sans-serif;
         }
 
         .wishlize-btn-primary {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%);
           color: white;
+          box-shadow: 0 10px 20px rgba(255, 95, 109, 0.2);
         }
 
-        .wishlize-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); }
+        .wishlize-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(255, 95, 109, 0.3); }
 
         .wishlize-btn-secondary {
-          background: #f3f4f6;
-          color: #374151;
+          background: white;
+          color: #1a1a1a;
+          border: 1px solid #e0e0e0;
         }
+        
+        .wishlize-btn-secondary:hover { border-color: #1a1a1a; }
 
         @media (max-width: 640px) {
+          .wishlize-modal-content { border-radius: 0; max-height: 100vh; }
           .wishlize-result-comparison { flex-direction: column; }
-          .comparison-arrow { transform: rotate(90deg); }
+          .comparison-arrow { transform: rotate(90deg); padding: 10px 0; }
           .preview-actions, .wishlize-result-actions { flex-direction: column; }
+          .wishlize-modal-header, .wishlize-modal-body { padding: 24px; }
         }
       </style>
     `;

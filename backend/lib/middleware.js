@@ -37,6 +37,51 @@ const RATE_LIMIT = {
   }
 };
 
+const CORS_ALLOWED_HEADERS = [
+  'Content-Type',
+  'X-Amz-Date',
+  'Authorization',
+  'X-Api-Key',
+  'X-Amz-Security-Token',
+  'X-Dev-Bypass-Token'
+];
+
+const CORS_ALLOWED_METHODS = ['GET', 'POST', 'OPTIONS'];
+
+// Developer bypass configuration
+// Comma-separated list of IPs that bypass rate limiting
+const DEV_WHITELISTED_IPS = (process.env.DEV_WHITELISTED_IPS || '')
+  .split(',')
+  .map(ip => ip.trim())
+  .filter(Boolean);
+
+// Secret token for bypassing rate limiting via header
+const DEV_BYPASS_TOKEN = process.env.DEV_BYPASS_TOKEN;
+
+/**
+ * Check if request should bypass rate limiting (developer mode)
+ * @param {Object} event - Lambda event
+ * @param {string} clientIp - Client IP address
+ * @returns {boolean} True if bypass is allowed
+ */
+function isDeveloperBypass(event, clientIp) {
+  // Check if IP is whitelisted
+  if (clientIp && DEV_WHITELISTED_IPS.includes(clientIp)) {
+    console.log(`[DEV BYPASS] Rate limit bypassed for whitelisted IP: ${clientIp}`);
+    return true;
+  }
+  
+  // Check for bypass token in header
+  const bypassHeader = event.headers?.['x-dev-bypass-token'] || 
+                       event.headers?.['X-Dev-Bypass-Token'];
+  if (DEV_BYPASS_TOKEN && bypassHeader === DEV_BYPASS_TOKEN) {
+    console.log(`[DEV BYPASS] Rate limit bypassed via token for IP: ${clientIp}`);
+    return true;
+  }
+  
+  return false;
+}
+
 /**
  * Clean up expired rate limit entries periodically
  */
@@ -88,11 +133,17 @@ function checkRateLimitForKey(key, limit) {
 /**
  * Check rate limit for IP address
  * @param {string} ip - IP address
+ * @param {Object} event - Lambda event (optional, for dev bypass check)
  * @returns {Promise<void>}
  * @throws {QuotaExceededError}
  */
-async function checkIpRateLimit(ip) {
+async function checkIpRateLimit(ip, event = null) {
   if (!ip) return;
+  
+  // Check for developer bypass
+  if (event && isDeveloperBypass(event, ip)) {
+    return;
+  }
 
   const result = checkRateLimitForKey(`ip:${ip}`, RATE_LIMIT.PER_IP);
 
@@ -133,6 +184,7 @@ function getClientIp(event) {
     event.requestContext?.http?.sourceIp ||
     // Custom header
     event.headers?.['X-Forwarded-For']?.split(',')[0]?.trim() ||
+    event.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ||
     null;
 }
 
@@ -173,8 +225,8 @@ function getCorsHeaders(event) {
   return {
     'Access-Control-Allow-Origin': allowOrigin || '*',
     'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-    'Access-Control-Allow-Methods': 'POST,OPTIONS'
+    'Access-Control-Allow-Headers': CORS_ALLOWED_HEADERS.join(','),
+    'Access-Control-Allow-Methods': CORS_ALLOWED_METHODS.join(',')
   };
 }
 
@@ -279,7 +331,7 @@ function createHandler(handlerName, validatorFn, handlerFn, options = {}) {
 
       // Rate limiting
       if (!skipRateLimit && clientIp) {
-        await checkIpRateLimit(clientIp);
+        await checkIpRateLimit(clientIp, event);
       }
 
       // Parse body
@@ -291,7 +343,7 @@ function createHandler(handlerName, validatorFn, handlerFn, options = {}) {
       // Validate input
       let validatedInput;
       if (validatorFn) {
-        validatedInput = validatorFn(body);
+        validatedInput = validatorFn(body, event);
       } else {
         validatedInput = body;
       }

@@ -36,6 +36,23 @@ const VALIDATION_RULES = {
   }
 };
 
+function getAllowedUrlHosts() {
+  const hosts = new Set(VALIDATION_RULES.URL.ALLOWED_HOSTS);
+  const region = process.env.AWS_REGION || 'ap-south-1';
+  const configuredBuckets = [
+    process.env.S3_UPLOAD_BUCKET,
+    process.env.S3_RESULTS_BUCKET,
+    process.env.S3_CDN_BUCKET
+  ].filter(Boolean);
+
+  for (const bucket of configuredBuckets) {
+    hosts.add(`${bucket}.s3.${region}.amazonaws.com`);
+    hosts.add(`${bucket}.s3.amazonaws.com`);
+  }
+
+  return Array.from(hosts);
+}
+
 /**
  * Validate email address format
  * @param {string} email - Email to validate
@@ -168,7 +185,8 @@ function validateURL(url, fieldName = 'url') {
   // Check host (S3 buckets only in production)
   // In development, allow any HTTPS URL for testing
   if (process.env.NODE_ENV === 'production') {
-    const isAllowedHost = VALIDATION_RULES.URL.ALLOWED_HOSTS.some(host => 
+    const allowedHosts = getAllowedUrlHosts();
+    const isAllowedHost = allowedHosts.some(host => 
       parsed.hostname === host || parsed.hostname.endsWith(`.${host}`)
     );
 

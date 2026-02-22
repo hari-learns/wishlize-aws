@@ -142,9 +142,7 @@ class EnhancedS3Service {
         Conditions: conditions,
         Fields: {
           'key': key,
-          'Content-Type': contentType,
-          'x-amz-meta-session-id': sessionId,
-          'x-amz-meta-upload-time': new Date().toISOString()
+          'Content-Type': contentType
         }
       };
 

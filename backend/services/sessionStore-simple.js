@@ -51,6 +51,16 @@ function calculateTTL(hours) {
   return Math.floor(Date.now() / 1000) + (hours * 60 * 60);
 }
 
+function normalizeErrorMessage(errorMessage) {
+  if (!errorMessage) return 'Generation failed';
+  if (typeof errorMessage === 'string') return errorMessage.substring(0, 500);
+  try {
+    return JSON.stringify(errorMessage).substring(0, 500);
+  } catch (error) {
+    return String(errorMessage).substring(0, 500);
+  }
+}
+
 /**
  * Create a new session
  * @param {string} ip - Client IP address
@@ -96,6 +106,7 @@ async function getOrCreateSession(ip) {
   const ipHash = hashIP(ip);
 
   // Check if there are active sessions for this IP
+  // DynamoDB TTL automatically removes expired sessions
   try {
     const result = await dynamodb.query({
       TableName: CONFIG.TABLE_NAME,
@@ -105,21 +116,17 @@ async function getOrCreateSession(ip) {
         ':ipHash': ipHash,
         ':now': Math.floor(Date.now() / 1000)
       },
-      ScanIndexForward: false,
+      ScanIndexForward: false, // Most recent first
       Limit: 1
     }).promise();
 
     if (result.Items && result.Items.length > 0) {
-      const session = result.Items[0];
-      // Check if session is older than 24 hours (reset quota)
-      const sessionAge = Date.now() - session.createdAt;
-      if (sessionAge > CONFIG.SESSION_TTL_HOURS * 60 * 60 * 1000) {
-        return createSession(ip);
-      }
-      return session;
+      // Return existing active session
+      // DynamoDB TTL will handle expiration cleanup automatically
+      return result.Items[0];
     }
 
-    // Create new session
+    // Create new session if none found
     return createSession(ip);
   } catch (error) {
     console.error('Failed to get session:', error);
@@ -135,10 +142,12 @@ async function getOrCreateSession(ip) {
  */
 async function getSession(sessionId) {
   try {
-    // Query by sessionId (requires GSI, but for now scan)
-    const result = await dynamodb.scan({
+    // Use GSI to query by sessionId - O(1) index lookup instead of O(n) table scan
+    const result = await dynamodb.query({
       TableName: CONFIG.TABLE_NAME,
-      FilterExpression: 'sessionId = :sessionId AND expiresAt > :now',
+      IndexName: 'SessionIdIndex',
+      KeyConditionExpression: 'sessionId = :sessionId',
+      FilterExpression: 'expiresAt > :now',
       ExpressionAttributeValues: {
         ':sessionId': sessionId,
         ':now': Math.floor(Date.now() / 1000)
@@ -146,13 +155,13 @@ async function getSession(sessionId) {
     }).promise();
 
     if (!result.Items || result.Items.length === 0) {
-      throw new NotFoundError('Session not found');
+      throw new NotFoundError('Session not found or has expired');
     }
 
     return result.Items[0];
   } catch (error) {
     if (error instanceof NotFoundError) throw error;
-    console.error('Failed to get session:', error);
+    console.error('Failed to get session by ID:', error);
     throw new Error('Failed to retrieve session');
   }
 }
@@ -166,6 +175,7 @@ async function getSession(sessionId) {
  */
 async function updateValidation(sessionId, validationResult, personImageUrl) {
   const now = Date.now();
+  const nextStatus = validationResult?.valid ? 'validated' : 'validation_failed';
 
   try {
     // First get the session to find ipHash
@@ -182,7 +192,7 @@ async function updateValidation(sessionId, validationResult, personImageUrl) {
         '#status': 'status'
       },
       ExpressionAttributeValues: {
-        ':status': 'validated',
+        ':status': nextStatus,
         ':validation': validationResult,
         ':url': personImageUrl,
         ':now': now
@@ -207,13 +217,11 @@ async function consumeTry(sessionId) {
   const now = Date.now();
 
   try {
-    // First get the session
+    // First get the session to retrieve ipHash
     const session = await getSession(sessionId);
 
-    if (session.triesLeft <= 0) {
-      throw new QuotaExceededError('No try-ons remaining');
-    }
-
+    // Use atomic update with conditional expression to prevent race conditions
+    // This ensures triesLeft is only decremented if it's greater than 0
     const result = await dynamodb.update({
       TableName: CONFIG.TABLE_NAME,
       Key: {
@@ -221,11 +229,14 @@ async function consumeTry(sessionId) {
         sessionId
       },
       UpdateExpression: 'SET triesLeft = triesLeft - :dec, #status = :processing, updatedAt = :now',
+      ConditionExpression: 'triesLeft > :zero AND #status = :validated',
       ExpressionAttributeNames: {
         '#status': 'status'
       },
       ExpressionAttributeValues: {
         ':dec': 1,
+        ':zero': 0,
+        ':validated': 'validated',
         ':processing': 'processing',
         ':now': now
       },
@@ -234,9 +245,48 @@ async function consumeTry(sessionId) {
 
     return result.Attributes.triesLeft;
   } catch (error) {
+    // Handle conditional check failure - race condition detected
+    if (error.code === 'ConditionalCheckFailedException') {
+      console.warn('Race condition prevented - quota exhausted', { sessionId });
+      throw new QuotaExceededError('Daily try-on limit reached. Please try again tomorrow.');
+    }
+    
     if (error instanceof QuotaExceededError) throw error;
     console.error('Failed to consume try:', error);
     throw new Error('Failed to process try-on request');
+  }
+}
+
+/**
+ * Save prediction ID to session
+ * @param {string} sessionId - Session ID
+ * @param {string} predictionId - FASHN prediction ID
+ * @returns {Promise<Object>} Updated session
+ */
+async function savePredictionId(sessionId, predictionId) {
+  const now = Date.now();
+
+  try {
+    const session = await getSession(sessionId);
+
+    const result = await dynamodb.update({
+      TableName: CONFIG.TABLE_NAME,
+      Key: {
+        ipHash: session.ipHash,
+        sessionId
+      },
+      UpdateExpression: 'SET predictionId = :predictionId, updatedAt = :now',
+      ExpressionAttributeValues: {
+        ':predictionId': predictionId,
+        ':now': now
+      },
+      ReturnValues: 'ALL_NEW'
+    }).promise();
+
+    return result.Attributes;
+  } catch (error) {
+    console.error('Failed to save prediction ID:', error);
+    throw new Error('Failed to save prediction ID');
   }
 }
 
@@ -249,6 +299,10 @@ async function consumeTry(sessionId) {
 async function saveResult(sessionId, resultUrl) {
   const now = Date.now();
 
+  if (!resultUrl || typeof resultUrl !== 'string') {
+    throw new SessionError('resultUrl is required', 'INVALID_RESULT_URL');
+  }
+
   try {
     const session = await getSession(sessionId);
 
@@ -258,12 +312,14 @@ async function saveResult(sessionId, resultUrl) {
         ipHash: session.ipHash,
         sessionId
       },
-      UpdateExpression: 'SET #status = :completed, resultImageUrl = :url, completedAt = :now, updatedAt = :now',
+      UpdateExpression: 'SET #status = :completed, resultImageUrl = :url, completedAt = :now, updatedAt = :now REMOVE errorMessage',
+      ConditionExpression: '#status = :processing',
       ExpressionAttributeNames: {
         '#status': 'status'
       },
       ExpressionAttributeValues: {
         ':completed': 'completed',
+        ':processing': 'processing',
         ':url': resultUrl,
         ':now': now
       },
@@ -272,8 +328,48 @@ async function saveResult(sessionId, resultUrl) {
 
     return result.Attributes;
   } catch (error) {
+    if (error.code === 'ConditionalCheckFailedException') {
+      throw new SessionError('Session is not in processing state', 'INVALID_SESSION_STATE');
+    }
     console.error('Failed to save result:', error);
     throw new Error('Failed to save try-on result');
+  }
+}
+
+/**
+ * Mark session as failed
+ * @param {string} sessionId - Session ID
+ * @param {string} errorMessage - Error message
+ * @returns {Promise<Object>} Updated session
+ */
+async function markFailed(sessionId, errorMessage) {
+  const now = Date.now();
+
+  try {
+    const session = await getSession(sessionId);
+
+    const result = await dynamodb.update({
+      TableName: CONFIG.TABLE_NAME,
+      Key: {
+        ipHash: session.ipHash,
+        sessionId
+      },
+      UpdateExpression: 'SET #status = :failed, errorMessage = :error, updatedAt = :now',
+      ExpressionAttributeNames: {
+        '#status': 'status'
+      },
+      ExpressionAttributeValues: {
+        ':failed': 'failed',
+        ':error': normalizeErrorMessage(errorMessage),
+        ':now': now
+      },
+      ReturnValues: 'ALL_NEW'
+    }).promise();
+
+    return result.Attributes;
+  } catch (error) {
+    console.error('Failed to mark session failed:', error);
+    throw new Error('Failed to update session');
   }
 }
 
@@ -282,7 +378,9 @@ module.exports = {
   getSession,
   updateValidation,
   consumeTry,
+  savePredictionId,
   saveResult,
+  markFailed,
   hashIP,
   CONFIG
 };

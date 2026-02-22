@@ -15,7 +15,7 @@ const {
   validateValidatePhotoBody,
   validateProcessTryOnBody
 } = require('./lib/validators');
-const { PhotoValidationError } = require('./lib/errors');
+const { PhotoValidationError, ValidationError } = require('./lib/errors');
 
 // Services
 const s3Service = require('./services/s3Service');
@@ -23,13 +23,93 @@ const sessionStore = require('./services/sessionStore-simple');
 const photoValidator = require('./validators/photoCheck');
 const fashnClient = require('./services/fashnClient');
 
+/**
+ * Parse S3 object location from a public URL.
+ * Supports both virtual-hosted and path-style S3 URLs.
+ * @param {string} imageUrl - Public S3 URL
+ * @returns {{ bucketName: string, key: string, region: string }}
+ */
+function parseS3Location(imageUrl) {
+  const parsed = new URL(imageUrl);
+  const hostParts = parsed.hostname.split('.');
+  let bucketName;
+  let region = process.env.AWS_REGION || 'ap-south-1';
+  let key;
+
+  if (hostParts[0] === 's3') {
+    // Path-style URL: https://s3.<region>.amazonaws.com/<bucket>/<key>
+    if (hostParts[1] && hostParts[1] !== 'amazonaws') {
+      region = hostParts[1];
+    }
+    const pathParts = parsed.pathname.replace(/^\/+/, '').split('/');
+    bucketName = pathParts.shift();
+    key = pathParts.join('/');
+  } else {
+    // Virtual-hosted URL: https://<bucket>.s3.<region>.amazonaws.com/<key>
+    bucketName = hostParts[0];
+    if (hostParts[1] === 's3' && hostParts[2] && hostParts[2] !== 'amazonaws') {
+      region = hostParts[2];
+    }
+    key = parsed.pathname.replace(/^\/+/, '');
+  }
+
+  if (!bucketName || !key) {
+    throw new ValidationError('Invalid S3 image URL', [{
+      field: 'imageUrl',
+      code: 'INVALID_S3_URL',
+      message: 'Could not extract bucket/key from image URL'
+    }]);
+  }
+
+  return {
+    bucketName,
+    key: decodeURIComponent(key),
+    region
+  };
+}
+
+function resolveClientIp(event) {
+  return (
+    event?.requestContext?.identity?.sourceIp ||
+    event?.requestContext?.http?.sourceIp ||
+    event?.headers?.['X-Forwarded-For']?.split(',')[0]?.trim() ||
+    event?.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ||
+    null
+  );
+}
+
+async function resolveGarmentImageUrl(garmentUrl, logger) {
+  const parsed = s3Service.parseS3Url(garmentUrl);
+  if (parsed && s3Service.isValidS3Url(garmentUrl)) {
+    const signedUrl = await s3Service.generateViewUrl(parsed.key, parsed.bucket, 3600);
+    logger.info('Resolved garment image URL via S3 signed URL', {
+      bucket: parsed.bucket,
+      key: parsed.key
+    });
+    return signedUrl;
+  }
+  return garmentUrl;
+}
+
 // ============================================================================
 // Handler: POST /get-upload-url
 // ============================================================================
 
 const getUploadUrlHandler = async (validatedInput, logger, event) => {
   const { fileType } = validatedInput;
-  const clientIp = event.requestContext?.identity?.sourceIp || 'unknown';
+  const clientIp = resolveClientIp(event);
+
+  // Validate IP address - critical security check
+  if (!clientIp || clientIp === 'unknown' || clientIp === null || clientIp === undefined) {
+    logger.error('IP validation failed', { 
+      clientIp: clientIp || 'undefined',
+      requestContext: event.requestContext ? 'present' : 'missing'
+    });
+    throw new ValidationError('Unable to process request - IP address required', [{
+      code: 'IP_REQUIRED',
+      message: 'IP address could not be determined from request'
+    }]);
+  }
 
   // Get or create session (IP-based)
   logger.info('Getting or creating session', { ip: anonymizeIp(clientIp) });
@@ -82,28 +162,58 @@ const validatePhotoHandler = async (validatedInput, logger) => {
   logger.info('Downloading image for validation', { imageUrl });
   
   let imageBuffer;
+  let s3Location;
   try {
-    // Parse bucket and key from S3 URL
-    const url = new URL(imageUrl);
-    const hostParts = url.hostname.split('.');
-    const bucketName = hostParts[0];
-    const key = url.pathname.substring(1); // Remove leading /
-    
+    s3Location = parseS3Location(imageUrl);
+
     // Use S3 SDK to download directly (Lambda has IAM permissions)
     const AWS = require('aws-sdk');
-    const s3 = new AWS.S3({ region: 'ap-south-1', signatureVersion: 'v4' });
+    const s3 = new AWS.S3({
+      region: s3Location.region,
+      signatureVersion: 'v4'
+    });
     
     const s3Response = await s3.getObject({
-      Bucket: bucketName,
-      Key: key
+      Bucket: s3Location.bucketName,
+      Key: s3Location.key
     }).promise();
     
     imageBuffer = s3Response.Body;
   } catch (error) {
-    logger.error('Failed to download image', { error: error.message });
+    logger.error('S3 download failed', { 
+      error: error.message,
+      errorCode: error.code,
+      bucketName: s3Location?.bucketName,
+      key: s3Location?.key
+    });
+    
+    // Handle specific S3 error codes with user-friendly messages
+    if (error.code === 'NoSuchKey') {
+      throw new PhotoValidationError('Image not found', [{
+        code: 'IMAGE_NOT_FOUND',
+        message: 'The uploaded image could not be found. Please try uploading again.'
+      }]);
+    } else if (error.code === 'AccessDenied' || error.code === 'Forbidden') {
+      throw new PhotoValidationError('Access denied', [{
+        code: 'ACCESS_DENIED',
+        message: 'Unable to access the image. Please check permissions and try again.'
+      }]);
+    } else if (error.code === 'NoSuchBucket') {
+      throw new PhotoValidationError('Storage error', [{
+        code: 'STORAGE_ERROR',
+        message: 'Storage service unavailable. Please try again later.'
+      }]);
+    } else if (error.code === 'NetworkingError' || error.code === 'TimeoutError') {
+      throw new PhotoValidationError('Network timeout', [{
+        code: 'NETWORK_ERROR',
+        message: 'Connection to storage failed. Please check your network and try again.'
+      }]);
+    }
+    
+    // Generic fallback for other errors
     throw new PhotoValidationError('Failed to download image for validation', [{
       code: 'DOWNLOAD_FAILED',
-      message: 'Could not retrieve image from S3'
+      message: 'Could not retrieve image from storage. Please try again.'
     }]);
   }
 
@@ -163,43 +273,51 @@ const processTryOnHandler = async (validatedInput, logger, event) => {
     };
   }
 
-  // Consume one try
-  logger.info('Consuming try', { sessionId });
-  const triesRemaining = await sessionStore.consumeTry(sessionId);
-
-  // Submit to FASHN API
+  // Submit to FASHN API FIRST (before consuming quota)
+  // This ensures we only charge for successful submissions
+  const garmentImageUrl = await resolveGarmentImageUrl(garmentUrl, logger);
   logger.info('Submitting to FASHN API', { 
     sessionId,
     personImageUrl: session.personImageUrl,
     garmentUrl 
   });
 
+  let submission;
   try {
-    const submission = await fashnClient.submitTryOnRequest({
+    submission = await fashnClient.submitTryOnRequest({
       personImageUrl: session.personImageUrl,
-      garmentImageUrl: garmentUrl,
+      garmentImageUrl: garmentImageUrl,
       sessionId
     });
 
     logger.info('FASHN submission successful', { 
       predictionId: submission.predictionId 
     });
-
-    return {
-      success: true,
-      status: 'processing',
-      message: 'Try-on generation started',
-      predictionId: submission.predictionId,
-      sessionId,
-      triesRemaining,
-      checkStatusUrl: `/status/${sessionId}`,
-      estimatedTimeSeconds: 60
-    };
-
   } catch (error) {
-    // Error handling without markFailed
-    throw error;
+    logger.error('FASHN submission failed - quota NOT consumed', {
+      error: error.message,
+      sessionId
+    });
+    throw error; // Re-throw to return error to client
   }
+
+  // Only consume quota AFTER successful FASHN submission
+  logger.info('Consuming try', { sessionId });
+  const triesRemaining = await sessionStore.consumeTry(sessionId);
+
+  // Save predictionId to session for status polling
+  await sessionStore.savePredictionId(sessionId, submission.predictionId);
+
+  return {
+    success: true,
+    status: 'processing',
+    message: 'Try-on generation started',
+    predictionId: submission.predictionId,
+    sessionId,
+    triesRemaining,
+    checkStatusUrl: `/status/${sessionId}`,
+    estimatedTimeSeconds: 60
+  };
 };
 
 // ============================================================================
@@ -224,9 +342,10 @@ const checkStatusHandler = async (validatedInput, logger) => {
           await sessionStore.saveResult(sessionId, resultUrl);
           session.status = 'completed';
           session.resultImageUrl = resultUrl;
+          session.errorMessage = null;
         }
       } else if (status.status === 'failed') {
-        await sessionStore.saveResult?.(sessionId, null);
+        await sessionStore.markFailed(sessionId, status.error || 'Generation failed');
         session.status = 'failed';
         session.errorMessage = status.error || 'Generation failed';
       }
@@ -271,11 +390,13 @@ module.exports = {
 
   checkStatus: createHandler(
     'checkStatus',
-    (body) => {
-      const { sessionId } = body;
+    (body, event) => {
+      // sessionId comes from path parameters for GET requests
+      const sessionId = event.pathParameters?.sessionId || body?.sessionId;
       if (!sessionId) throw new Error('sessionId is required');
       return { sessionId };
     },
-    checkStatusHandler
+    checkStatusHandler,
+    { skipRateLimit: true }  // Skip rate limiting for polling endpoint
   )
 };

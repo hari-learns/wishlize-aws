@@ -14,7 +14,9 @@
     MAX_FILE_SIZE: 10 * 1024 * 1024,
     SUPPORTED_FORMATS: ['image/jpeg', 'image/png'],
     POLL_INTERVAL: 3000,
-    MAX_POLL_ATTEMPTS: 40
+    MAX_POLL_ATTEMPTS: 40,
+    // Dev bypass token - set to null to disable
+    DEV_BYPASS_TOKEN: 'wishlize-dev-2024-test-token'
   };
 
   // Widget State
@@ -62,6 +64,15 @@
     for (const selector of selectors) {
       const element = document.querySelector(selector);
       if (element) {
+        const garmentFromAttribute = element.getAttribute?.('data-wishlize-garment');
+        if (garmentFromAttribute) {
+          try {
+            return new URL(garmentFromAttribute, window.location.href).href;
+          } catch (error) {
+            console.warn('[Wishlize] Invalid data-wishlize-garment URL, falling back to image src');
+          }
+        }
+
         if (element.tagName === 'META') {
           return element.getAttribute('content');
         }
@@ -601,7 +612,7 @@
       state.pollingInterval = setInterval(async () => {
         attempts++;
         try {
-          const status = await apiCall('/status', { sessionId: state.sessionId }, 'GET');
+          const status = await apiCall(`/status/${state.sessionId}`, null, 'GET');
 
           if (status.status === 'completed') {
             clearInterval(state.pollingInterval);
@@ -656,7 +667,18 @@
 
   async function apiCall(endpoint, data, method = 'POST') {
     const url = `${CONFIG.API_BASE}${endpoint}`;
-    const options = { method, headers: { 'Content-Type': 'application/json' } };
+    const headers = {};
+    
+    if (method !== 'GET') {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    // Add dev bypass token only for rate-limited endpoints (POST calls)
+    if (CONFIG.DEV_BYPASS_TOKEN && method !== 'GET') {
+      headers['X-Dev-Bypass-Token'] = CONFIG.DEV_BYPASS_TOKEN;
+    }
+    
+    const options = { method, headers };
     
     if (method === 'GET' && data) {
       const params = new URLSearchParams(data).toString();
@@ -666,6 +688,9 @@
     if (data) options.body = JSON.stringify(data);
     
     const response = await fetch(url, options);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
     const result = await response.json();
     if (!result.success) throw new Error(result.error?.message || 'Failed');
     return result;

@@ -91,6 +91,19 @@ async function resolveGarmentImageUrl(garmentUrl, logger) {
   return garmentUrl;
 }
 
+async function resolvePersonImageUrl(personImageUrl, logger) {
+  const parsed = s3Service.parseS3Url(personImageUrl);
+  if (parsed && s3Service.isValidS3Url(personImageUrl)) {
+    const signedUrl = await s3Service.generateViewUrl(parsed.key, parsed.bucket, 3600);
+    logger.info('Resolved person image URL via S3 signed URL', {
+      bucket: parsed.bucket,
+      key: parsed.key
+    });
+    return signedUrl;
+  }
+  return personImageUrl;
+}
+
 // ============================================================================
 // Handler: POST /get-upload-url
 // ============================================================================
@@ -275,17 +288,18 @@ const processTryOnHandler = async (validatedInput, logger, event) => {
 
   // Submit to FASHN API FIRST (before consuming quota)
   // This ensures we only charge for successful submissions
+  const personImageUrl = await resolvePersonImageUrl(session.personImageUrl, logger);
   const garmentImageUrl = await resolveGarmentImageUrl(garmentUrl, logger);
   logger.info('Submitting to FASHN API', { 
     sessionId,
-    personImageUrl: session.personImageUrl,
+    personImageSource: 'signed-or-original-url',
     garmentUrl 
   });
 
   let submission;
   try {
     submission = await fashnClient.submitTryOnRequest({
-      personImageUrl: session.personImageUrl,
+      personImageUrl,
       garmentImageUrl: garmentImageUrl,
       sessionId
     });

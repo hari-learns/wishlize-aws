@@ -11,7 +11,7 @@
     occasionMatch: 3,
     vibeMatch: 2,
     audienceBoost: 1,
-    maxResults: 3
+    maxResults: 2
   };
 
   function normalizeTagList(values) {
@@ -53,6 +53,7 @@
       top3: [],
       debug: {
         excludedOutOfStock: [],
+        excludedNoSemanticMatch: [],
         outOfStockMatched: [],
         zeroScore: [],
         tieBreakApplied: false,
@@ -82,17 +83,22 @@
 
       const occasionPoints = matchedOccasion.length * DEFAULT_WEIGHTS.occasionMatch;
       const vibePoints = matchedVibe.length * DEFAULT_WEIGHTS.vibeMatch;
+      const semanticPoints = occasionPoints + vibePoints;
       const audiencePoints = desiredAudience && normalizeAudience(product.audience) === desiredAudience
         ? DEFAULT_WEIGHTS.audienceBoost
         : 0;
 
-      const score = occasionPoints + vibePoints + audiencePoints;
+      // Audience should refine relevant matches, never create a match by itself.
+      if (semanticPoints <= 0) {
+        result.debug.excludedNoSemanticMatch.push(productId);
+        return;
+      }
+
+      const score = semanticPoints + audiencePoints;
 
       if (product.inStock === false) {
         result.debug.excludedOutOfStock.push(productId);
-        if (score > 0) {
-          result.debug.outOfStockMatched.push(productId);
-        }
+        result.debug.outOfStockMatched.push(productId);
         return;
       }
 

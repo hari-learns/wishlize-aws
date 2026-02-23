@@ -406,6 +406,9 @@
             if (!parserCase.occasion.includes('wedding') || !parserCase.vibe.includes('classic')) {
                 assertErrors.push('Parser failed wedding/classic extraction');
             }
+            if (!parserCase.occasion.includes('formal') || !parserCase.occasion.includes('evening')) {
+                assertErrors.push('Parser failed wedding fallback expansion to formal/evening');
+            }
 
             const deterministicOne = await window.WishlizeMatchingEngine.recommend({
                 text: 'Need a party look with bold vibe',
@@ -423,8 +426,24 @@
             if (idsOne !== idsTwo) {
                 assertErrors.push('Determinism failed: top3 IDs changed between runs');
             }
+            if ((deterministicOne.top3 || []).length > 2) {
+                assertErrors.push('Recommendation cap failed: expected max 2 results');
+            }
             if ((deterministicOne.persona || {}).personaId !== (deterministicTwo.persona || {}).personaId) {
                 assertErrors.push('Determinism failed: persona changed between runs');
+            }
+            if (/top three|three looks/i.test((deterministicOne.persona || {}).intro || '')) {
+                assertErrors.push('Persona copy mismatch: still references three looks');
+            }
+
+            const wedding = await window.WishlizeMatchingEngine.recommend({
+                text: 'Need a wedding look with classic vibe for women',
+                context: { audience: 'woman' },
+                products: catalog
+            });
+            const weddingIds = (wedding.top3 || []).map((entry) => entry.productId);
+            if (weddingIds.some((id) => String(id).includes('casualwear'))) {
+                assertErrors.push('Wedding mapping failed: casualwear leaked into top results');
             }
 
             const vague = await window.WishlizeMatchingEngine.recommend({
@@ -450,6 +469,15 @@
             const stockIds = (stockResult.top3 || []).map((entry) => entry.productId);
             if (stockIds.includes('party-men-1')) {
                 assertErrors.push('Out-of-stock exclusion failed for party-men-1');
+            }
+
+            const noSemanticMatch = await window.WishlizeMatchingEngine.recommend({
+                text: 'streetwear urban men',
+                context: { audience: 'men' },
+                products: catalog
+            });
+            if (!noSemanticMatch.needsClarification || (noSemanticMatch.top3 || []).length !== 0) {
+                assertErrors.push('Semantic gating failed: audience-only fallback leaked results');
             }
 
             const shapeResult = await window.WishlizeMatchingEngine.recommend({

@@ -149,3 +149,19 @@ Purpose: Track what to upgrade from demo implementation to production-grade impl
   - premium curation copy
 - Add timeout, fallback, and schema validation around Bedrock outputs.
 - Add cost controls and token budgeting with per-session guardrails.
+
+### Live AI Store Search (Core Business Path)
+- Build multi-tenant connectors to ingest merchant catalog data from APIs, feeds, or S3 snapshots.
+- Add retrieval layer that performs live catalog search before recommendation scoring.
+- Enforce grounded outputs: return only products that exist in merchant inventory at query time.
+- Add Bedrock-driven query understanding + reranking on top of deterministic filters.
+- Add confidence thresholds:
+  - high confidence => return ranked recommendations
+  - low confidence => ask clarification (no forced guesses)
+- Add freshness controls for inventory and pricing (TTL + stale-data fallback policy).
+- Add merchant-specific taxonomy mapping so parser/scorer adapts per business domain.
+- Add observability:
+  - retrieval hit-rate
+  - low-confidence ratio
+  - bad-match feedback loop
+  - latency/cost budgets per request

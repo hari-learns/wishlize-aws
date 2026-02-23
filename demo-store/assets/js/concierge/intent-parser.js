@@ -139,6 +139,18 @@
     return CONFIDENCE.HIGH;
   }
 
+  function expandOccasionFallbacks(occasionTags) {
+    const expanded = uniqueList(occasionTags);
+
+    // Demo catalog has no direct "wedding" items, so map to nearest formal buckets.
+    if (expanded.includes('wedding')) {
+      expanded.push('formal');
+      expanded.push('evening');
+    }
+
+    return uniqueList(expanded);
+  }
+
   function parse(text, options = {}) {
     const normalizedText = normalizeText(text);
     const tokens = uniqueList(normalizedText.split(' ').filter(Boolean));
@@ -156,11 +168,25 @@
       getAllowedSet(taxonomy, 'vibe')
     );
 
-    const totalMatches = occasion.length + vibe.length;
+    // If no explicit tags found, try to see if any token matches an occasion or vibe directly
+    if (occasion.length === 0 && vibe.length === 0) {
+      tokens.forEach(token => {
+        Object.keys(LEXICON.occasion).forEach(occ => {
+          if (occ === token) occasion.push(occ);
+        });
+        Object.keys(LEXICON.vibe).forEach(v => {
+          if (v === token) vibe.push(v);
+        });
+      });
+    }
+
+    const normalizedOccasion = expandOccasionFallbacks(occasion);
+    const normalizedVibe = uniqueList(vibe);
+    const totalMatches = normalizedOccasion.length + normalizedVibe.length;
 
     return {
-      occasion,
-      vibe,
+      occasion: normalizedOccasion,
+      vibe: normalizedVibe,
       keywords: tokens,
       confidence: deriveConfidence(totalMatches),
       audienceHint: extractAudienceHint(normalizedText, options.contextAudience),

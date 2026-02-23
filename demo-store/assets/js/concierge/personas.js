@@ -11,28 +11,28 @@
     curated: [
       {
         id: 'curated-atelier-01',
-        render: ({ occasionText, vibeText }) =>
-          `For ${occasionText}, I curated three looks with a ${vibeText} direction and clean match confidence.`
+        render: ({ occasionText, vibeText, countText }) =>
+          `For ${occasionText}, I curated ${countText} with a ${vibeText} direction and clean match confidence.`
       },
       {
         id: 'curated-editorial-02',
-        render: ({ occasionText, vibeText }) =>
-          `These three picks align with your ${occasionText} plan and keep the vibe ${vibeText} without overstyling.`
+        render: ({ occasionText, vibeText, countText }) =>
+          `These ${countText} align with your ${occasionText} plan and keep the vibe ${vibeText} without overstyling.`
       },
       {
         id: 'curated-premium-03',
-        render: ({ occasionText, vibeText }) =>
-          `I narrowed this to three strong options for ${occasionText}, tuned toward a ${vibeText} finish.`
+        render: ({ occasionText, vibeText, countText }) =>
+          `I narrowed this to ${countText} for ${occasionText}, tuned toward a ${vibeText} finish.`
       },
       {
         id: 'curated-runway-04',
-        render: ({ occasionText, vibeText }) =>
-          `Based on ${occasionText}, these edits carry the ${vibeText} energy best in the current catalog.`
+        render: ({ occasionText, vibeText, countText }) =>
+          `Based on ${occasionText}, these ${countText} carry the ${vibeText} energy best in the current catalog.`
       },
       {
         id: 'curated-precision-05',
-        render: ({ occasionText, vibeText }) =>
-          `Your top three are ready: optimized for ${occasionText} with a ${vibeText} visual language.`
+        render: ({ occasionText, vibeText, countText }) =>
+          `Your best ${countText} are ready: optimized for ${occasionText} with a ${vibeText} visual language.`
       }
     ],
     clarify: [
@@ -42,7 +42,7 @@
       },
       {
         id: 'clarify-tailor-02',
-        render: () => 'Let me tighten the fit: share the occasion and style mood, then I will return your top three.'
+        render: () => 'Let me tighten the fit: share the occasion and style mood, then I will return your best matching looks.'
       },
       {
         id: 'clarify-concierge-03',
@@ -111,6 +111,14 @@
     return [mode, occasion, vibe, productIds].join('::');
   }
 
+  function formatCountText(count) {
+    const safeCount = Number.isFinite(count) ? count : 0;
+    if (safeCount <= 1) {
+      return '1 look';
+    }
+    return `${safeCount} looks`;
+  }
+
   function compose(input = {}) {
     const mode = normalizeMode(input.mode);
     const intent = input.intent && typeof input.intent === 'object' ? input.intent : {};
@@ -121,7 +129,9 @@
     const templateParams = {
       occasionText: summarizeTags(intent.occasion, 'your occasion'),
       vibeText: summarizeTags(intent.vibe, 'refined'),
-      count: top3.length
+      audienceText: intent.audienceHint === 'men' ? 'men' : (intent.audienceHint === 'woman' ? 'women' : 'our collection'),
+      count: top3.length,
+      countText: formatCountText(top3.length)
     };
 
     const output = {
@@ -129,8 +139,18 @@
       personaId: template.id
     };
 
+    // Include audience in intro for better feedback
+    if (intent.audienceHint && mode === 'curated') {
+        output.intro = `For ${templateParams.audienceText}, ${output.intro}`;
+    }
+
     if (mode === 'clarify') {
-      output.followUpQuestion = 'What is the occasion, preferred vibe, and audience (men or woman)?';
+      const isAudienceKnown = !!intent.audienceHint;
+      if (isAudienceKnown) {
+        output.followUpQuestion = 'Could you specify the occasion or the type of vibe you are looking for?';
+      } else {
+        output.followUpQuestion = 'What is the occasion, preferred vibe, and audience (men or woman)?';
+      }
     }
 
     if (mode === 'no-stock') {

@@ -6,6 +6,7 @@
 (function initWishlizeMatchingEngine(globalScope) {
   'use strict';
 
+  const MAX_RECOMMENDATIONS = 2;
   let enhancer = null;
 
   function normalizeAudience(value) {
@@ -169,16 +170,23 @@
       });
     }
 
+    const requestedMax = Number.isFinite(context.maxResults)
+      ? Math.floor(context.maxResults)
+      : MAX_RECOMMENDATIONS;
+    const boundedMax = Math.max(1, Math.min(MAX_RECOMMENDATIONS, requestedMax));
+
     const scoringResult = deps.scorer.rankProducts({
       products,
       intent,
       context: {
         audience: normalizeAudience(context.audience || intent.audienceHint),
-        maxResults: context.maxResults
+        maxResults: boundedMax
       }
     });
 
-    const top3 = Array.isArray(scoringResult.top3) ? scoringResult.top3 : [];
+    const top3 = Array.isArray(scoringResult.top3)
+      ? scoringResult.top3.slice(0, boundedMax)
+      : [];
     const hasOutOfStockMatches = Array.isArray(scoringResult.debug && scoringResult.debug.outOfStockMatched)
       && scoringResult.debug.outOfStockMatched.length > 0;
 

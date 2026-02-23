@@ -151,6 +151,10 @@ Purpose: Track what to upgrade from demo implementation to production-grade impl
 - Add cost controls and token budgeting with per-session guardrails.
 
 ### Live AI Store Search (Core Business Path)
+- **Critical requirement:** replace the current hardcoded demo logic (rule parser + fixed scorer + template personas) with real AI-driven recommendation flow.
+- AI must detect user intent from free text (occasion, vibe, constraints), then map intent to live merchant catalog items.
+- Recommendation output must return top **2** grounded products for chat cards (or ask clarification when confidence is low).
+- No fake/hardcoded fallback recommendations in production path; every recommendation must come from live catalog retrieval.
 - Build multi-tenant connectors to ingest merchant catalog data from APIs, feeds, or S3 snapshots.
 - Add retrieval layer that performs live catalog search before recommendation scoring.
 - Enforce grounded outputs: return only products that exist in merchant inventory at query time.

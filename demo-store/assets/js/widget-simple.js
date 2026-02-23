@@ -1,7 +1,7 @@
 /**
  * Wishlize Virtual Try-On Widget (Simplified - No Email)
  * 
- * Flow: Click Button → Upload Photo → Visualize → See Result
+ * Flow: Click Button → Upload Photo → Wishlize → See Result
  * No email, no delays, instant gratification!
  */
 
@@ -96,12 +96,17 @@
   function injectTriggerButton() {
     let container = document.getElementById('wishlize-widget-container');
     
+    // BUG FIX: Only auto-inject if it's a product detail page (not a grid)
     if (!container) {
-      const productInfo = document.querySelector('.product-info, .product-details');
-      if (productInfo) {
-        container = document.createElement('div');
-        container.id = 'wishlize-widget-container';
-        productInfo.appendChild(container);
+      const isProductPage = window.location.pathname.includes('/product/');
+      
+      if (isProductPage) {
+        const productInfo = document.querySelector('.product-info, .product-details, .product-info-sidebar');
+        if (productInfo) {
+          container = document.createElement('div');
+          container.id = 'wishlize-widget-container';
+          productInfo.appendChild(container);
+        }
       }
     }
 
@@ -113,16 +118,16 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
       </svg>
-      <span>Visualise on Me</span>
+      <span>Wishlize on Me</span>
     `;
     button.style.cssText = `
-      background: linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%);
+      background: linear-gradient(135deg, #0C2C55 0%, #1a4a8e 100%);
       color: white;
       border: none;
       padding: 1.25rem 2.5rem;
       border-radius: 50px;
-      font-size: 1rem;
-      font-weight: 600;
+      font-size: 1.1rem;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
       width: 100%;
@@ -130,30 +135,36 @@
       align-items: center;
       justify-content: center;
       gap: 12px;
-      box-shadow: 0 10px 20px rgba(255, 95, 109, 0.2);
+      box-shadow: 0 10px 20px rgba(12, 44, 85, 0.2);
       margin: 20px 0;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Playfair Display', serif;
       letter-spacing: 0.5px;
     `;
     
     button.addEventListener('mouseenter', () => {
       button.style.transform = 'translateY(-3px)';
-      button.style.boxShadow = '0 15px 30px rgba(255, 95, 109, 0.3)';
+      button.style.boxShadow = '0 15px 30px rgba(12, 44, 85, 0.3)';
     });
     
     button.addEventListener('mouseleave', () => {
       button.style.transform = 'translateY(0)';
-      button.style.boxShadow = '0 10px 20px rgba(255, 95, 109, 0.2)';
+      button.style.boxShadow = '0 10px 20px rgba(12, 44, 85, 0.2)';
     });
 
-    button.addEventListener('click', openModal);
+    button.addEventListener('click', () => openModal());
 
     container.innerHTML = '';
     container.appendChild(button);
   }
 
-  function openModal() {
+  function openModal(specificGarmentUrl) {
     if (state.isOpen) return;
+    
+    // If a specific garment is passed (e.g. from Concierge), use it
+    if (typeof specificGarmentUrl === 'string' && specificGarmentUrl.trim().length > 0) {
+      state.garmentUrl = specificGarmentUrl;
+    }
+
     state.isOpen = true;
     state.currentFile = null;
     state.sessionId = null;
@@ -190,7 +201,7 @@
         <div class="wishlize-modal-overlay">
           <div class="wishlize-modal-content">
             <div class="wishlize-modal-header">
-              <h2>Virtual Try-On</h2>
+              <h2>Wishlize Experience</h2>
               <button class="wishlize-close-btn" id="wishlize-close">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M18 6L6 18M6 6l12 12"/>
@@ -206,7 +217,7 @@
                   <input type="file" id="wishlize-file-input" accept="image/jpeg,image/png" hidden>
                   <div class="upload-content">
                     <div class="upload-icon-wrapper">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FF5F6D" stroke-width="2">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0C2C55" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
                       </svg>
                     </div>
@@ -234,7 +245,7 @@
                 </div>
                 <div class="preview-actions">
                   <button class="wishlize-btn wishlize-btn-secondary" id="wishlize-change-photo">Change Photo</button>
-                  <button class="wishlize-btn wishlize-btn-primary" id="wishlize-visualize">Visualize</button>
+                  <button class="wishlize-btn wishlize-btn-primary" id="wishlize-visualize">Wishlize</button>
                 </div>
               </div>
 
@@ -245,7 +256,7 @@
                     <div class="spinner"></div>
                   </div>
                   <div class="processing-text">
-                    <h3>Creating your try-on...</h3>
+                    <h3>Creating your wishlize...</h3>
                     <p id="wishlize-status-text">Uploading photo</p>
                   </div>
                 </div>
@@ -288,7 +299,7 @@
                 <div class="wishlize-error-message">
                   <div class="error-icon-wrapper">⚠️</div>
                   <h3 id="wishlize-error-title">Unable to Process</h3>
-                  <p id="wishlize-error-text">Something went wrong during the visualisation.</p>
+                  <p id="wishlize-error-text">Something went wrong during the wishlize.</p>
                 </div>
                 <button class="wishlize-btn wishlize-btn-primary" id="wishlize-retry">Try Again</button>
               </div>
@@ -303,7 +314,7 @@
   function getModalCSS() {
     return `
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
 
         .wishlize-modal {
           display: none;
@@ -353,9 +364,11 @@
 
         .wishlize-modal-header h2 {
           margin: 0;
-          font-size: 1.5rem;
+          font-family: 'Playfair Display', serif;
+          font-size: 1.6rem;
           font-weight: 700;
           letter-spacing: -0.5px;
+          color: #0C2C55;
         }
 
         .wishlize-close-btn {
@@ -392,13 +405,13 @@
         }
 
         .wishlize-upload-area:hover, .wishlize-upload-area.dragover {
-          border-color: #FF5F6D;
-          background: #fffafa;
+          border-color: #0C2C55;
+          background: #f0f4f8;
           transform: scale(1.01);
         }
 
         .upload-icon-wrapper { margin-bottom: 20px; }
-        .upload-text { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
+        .upload-text { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
         .upload-subtext { font-size: 0.9rem; color: #666; margin-bottom: 12px; }
         .upload-hint { font-size: 0.8rem; color: #999; }
 
@@ -409,10 +422,10 @@
           border-radius: 16px;
         }
 
-        .wishlize-photo-tips h4 { margin: 0 0 16px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: #1a1a1a; }
+        .wishlize-photo-tips h4 { margin: 0 0 16px; font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; color: #1a1a1a; }
         .wishlize-photo-tips ul { margin: 0; padding-left: 0; list-style: none; font-size: 0.9rem; color: #666; }
         .wishlize-photo-tips li { margin-bottom: 8px; position: relative; padding-left: 20px; }
-        .wishlize-photo-tips li:before { content: "•"; position: absolute; left: 0; color: #FF5F6D; font-weight: bold; }
+        .wishlize-photo-tips li:before { content: "•"; position: absolute; left: 0; color: #0C2C55; font-weight: bold; }
 
         .wishlize-preview-container {
           border-radius: 16px;
@@ -443,7 +456,7 @@
           width: 48px;
           height: 48px;
           border: 3px solid #f0f0f0;
-          border-top-color: #FF5F6D;
+          border-top-color: #0C2C55;
           border-radius: 50%;
           animation: spin 1s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite;
           margin: 0 auto;
@@ -451,7 +464,7 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .processing-text h3 { margin: 0 0 8px; font-size: 1.25rem; font-weight: 600; }
+        .processing-text h3 { margin: 0 0 8px; font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; }
         .processing-text p { margin: 0; color: #666; font-size: 0.95rem; }
 
         .wishlize-progress-bar {
@@ -464,7 +477,7 @@
 
         .wishlize-progress-fill {
           height: 100%;
-          background: linear-gradient(90deg, #FF5F6D 0%, #FFC371 100%);
+          background: linear-gradient(90deg, #0C2C55 0%, #1a4a8e 100%);
           width: 0%;
           transition: width 0.5s ease;
         }
@@ -479,9 +492,9 @@
         }
 
         .comparison-item { flex: 1; text-align: center; }
-        .comparison-item label { display: block; font-size: 0.75rem; font-weight: 700; color: #999; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .comparison-item label { display: block; font-family: 'Playfair Display', serif; font-size: 0.85rem; font-weight: 700; color: #999; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
         .img-frame { border-radius: 16px; overflow: hidden; background: #f0f0f0; aspect-ratio: 3/4; }
-        .primary-frame { box-shadow: 0 20px 40px rgba(255, 95, 109, 0.15); border: 2px solid #fff; }
+        .primary-frame { box-shadow: 0 20px 40px rgba(12, 44, 85, 0.15); border: 2px solid #fff; }
         .img-frame img { width: 100%; height: 100%; object-fit: cover; }
         .comparison-arrow { flex-shrink: 0; }
 
@@ -489,15 +502,16 @@
 
         .wishlize-error-message { text-align: center; padding: 60px 20px; }
         .error-icon-wrapper { font-size: 40px; margin-bottom: 24px; }
-        .wishlize-error-message h3 { margin: 0 0 12px; font-size: 1.25rem; font-weight: 700; }
+        .wishlize-error-message h3 { margin: 0 0 12px; font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; }
         .wishlize-error-message p { margin: 0; color: #666; font-size: 0.95rem; line-height: 1.6; }
 
         .wishlize-btn {
           flex: 1;
           padding: 1rem 1.5rem;
           border-radius: 50px;
-          font-size: 0.95rem;
-          font-weight: 600;
+          font-family: 'Playfair Display', serif;
+          font-size: 1.1rem;
+          font-weight: 700;
           cursor: pointer;
           border: none;
           transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
@@ -505,16 +519,15 @@
           display: flex;
           align-items: center;
           justify-content: center;
-          font-family: 'Inter', sans-serif;
         }
 
         .wishlize-btn-primary {
-          background: linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%);
+          background: linear-gradient(135deg, #0C2C55 0%, #1a4a8e 100%);
           color: white;
-          box-shadow: 0 10px 20px rgba(255, 95, 109, 0.2);
+          box-shadow: 0 10px 20px rgba(12, 44, 85, 0.2);
         }
 
-        .wishlize-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(255, 95, 109, 0.3); }
+        .wishlize-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(12, 44, 85, 0.3); }
 
         .wishlize-btn-secondary {
           background: white;
@@ -621,7 +634,7 @@
       }
 
       // 4. Process
-      updateProgress(70, 'Generating try-on...');
+      updateProgress(70, 'Generating wishlize...');
       const process = await apiCall('/process-tryon', {
         sessionId: state.sessionId,
         garmentUrl: state.garmentUrl

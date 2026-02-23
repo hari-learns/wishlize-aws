@@ -5,8 +5,8 @@
     --bg-secondary: #fbfbfb;
     --text-main: #1a1a1a;
     --text-muted: #666666;
-    --accent-gradient: linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%);
-    --accent-hover: linear-gradient(135deg, #ff4b5a 0%, #ffb347 100%);
+    --accent-gradient: linear-gradient(135deg, #0C2C55 0%, #1a4a8e 100%);
+    --accent-hover: linear-gradient(135deg, #0a254a 0%, #153d7a 100%);
     --glass-bg: rgba(255, 255, 255, 0.8);
     --border-soft: rgba(0, 0, 0, 0.05);
     --shadow-premium: 0 10px 30px rgba(0, 0, 0, 0.05);
@@ -216,9 +216,9 @@ main {
     padding: 1.25rem 2.5rem;
     border-radius: 50px;
     border: none;
-    font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    font-size: 1rem;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 1.1rem;
     letter-spacing: 0.5px;
     cursor: pointer;
     transition: var(--transition);
@@ -227,13 +227,13 @@ main {
     align-items: center;
     justify-content: center;
     gap: 12px;
-    box-shadow: 0 10px 20px rgba(255, 95, 109, 0.2);
+    box-shadow: 0 10px 20px rgba(12, 44, 85, 0.2);
     margin-bottom: 1rem;
 }
 
 .wishlize-visualise-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 15px 30px rgba(255, 95, 109, 0.3);
+    box-shadow: 0 15px 30px rgba(12, 44, 85, 0.3);
 }
 
 .btn-secondary-outline {
@@ -242,8 +242,9 @@ main {
     padding: 1.25rem 2.5rem;
     border-radius: 50px;
     border: 1px solid #e0e0e0;
-    font-weight: 600;
-    font-size: 1rem;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 1.1rem;
     cursor: pointer;
     transition: var(--transition);
     width: 100%;

@@ -105,10 +105,10 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
       </svg>
-      <span>Visualise on Me</span>
+      <span>Wishlize on me</span>
     `;
     button.style.cssText = `
-      background: linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%);
+      background: linear-gradient(135deg, #0C2C55 0%, #1a4a8e 100%);
       color: white;
       border: none;
       padding: 1.25rem 2.5rem;
@@ -122,7 +122,7 @@
       align-items: center;
       justify-content: center;
       gap: 12px;
-      box-shadow: 0 10px 20px rgba(255, 95, 109, 0.2);
+      box-shadow: 0 10px 20px rgba(12, 44, 85, 0.2);
       margin: 20px 0;
       font-family: 'Inter', sans-serif;
       letter-spacing: 0.5px;
@@ -130,12 +130,12 @@
     
     button.addEventListener('mouseenter', () => {
       button.style.transform = 'translateY(-3px)';
-      button.style.boxShadow = '0 15px 30px rgba(255, 95, 109, 0.3)';
+      button.style.boxShadow = '0 15px 30px rgba(12, 44, 85, 0.3)';
     });
     
     button.addEventListener('mouseleave', () => {
       button.style.transform = 'translateY(0)';
-      button.style.boxShadow = '0 10px 20px rgba(255, 95, 109, 0.2)';
+      button.style.boxShadow = '0 10px 20px rgba(12, 44, 85, 0.2)';
     });
 
     button.addEventListener('click', openModal);
@@ -198,7 +198,7 @@
                   <input type="file" id="wishlize-file-input" accept="image/jpeg,image/png" hidden>
                   <div class="upload-content">
                     <div class="upload-icon-wrapper">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FF5F6D" stroke-width="2">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0C2C55" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
                       </svg>
                     </div>
@@ -384,8 +384,8 @@
         }
 
         .wishlize-upload-area:hover, .wishlize-upload-area.dragover {
-          border-color: #FF5F6D;
-          background: #fffafa;
+          border-color: #0C2C55;
+          background: #f0f4f8;
           transform: scale(1.01);
         }
 
@@ -404,7 +404,7 @@
         .wishlize-photo-tips h4 { margin: 0 0 16px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: #1a1a1a; }
         .wishlize-photo-tips ul { margin: 0; padding-left: 0; list-style: none; font-size: 0.9rem; color: #666; }
         .wishlize-photo-tips li { margin-bottom: 8px; position: relative; padding-left: 20px; }
-        .wishlize-photo-tips li:before { content: "•"; position: absolute; left: 0; color: #FF5F6D; font-weight: bold; }
+        .wishlize-photo-tips li:before { content: "•"; position: absolute; left: 0; color: #0C2C55; font-weight: bold; }
 
         .wishlize-preview-container {
           border-radius: 16px;
@@ -435,7 +435,7 @@
           width: 48px;
           height: 48px;
           border: 3px solid #f0f0f0;
-          border-top-color: #FF5F6D;
+          border-top-color: #0C2C55;
           border-radius: 50%;
           animation: spin 1s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite;
           margin: 0 auto;
@@ -456,7 +456,7 @@
 
         .wishlize-progress-fill {
           height: 100%;
-          background: linear-gradient(90deg, #FF5F6D 0%, #FFC371 100%);
+          background: linear-gradient(90deg, #0C2C55 0%, #1a4a8e 100%);
           width: 0%;
           transition: width 0.5s ease;
         }
@@ -501,12 +501,12 @@
         }
 
         .wishlize-btn-primary {
-          background: linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%);
+          background: linear-gradient(135deg, #0C2C55 0%, #1a4a8e 100%);
           color: white;
-          box-shadow: 0 10px 20px rgba(255, 95, 109, 0.2);
+          box-shadow: 0 10px 20px rgba(12, 44, 85, 0.2);
         }
 
-        .wishlize-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(255, 95, 109, 0.3); }
+        .wishlize-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(12, 44, 85, 0.3); }
 
         .wishlize-btn-secondary {
           background: white;

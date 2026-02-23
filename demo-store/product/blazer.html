@@ -4,14 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redirecting...</title>
+    <meta http-equiv="refresh" content="0; url=./item.html">
     <script>
         (function redirectToItemPage() {
-            var query = window.location.search || '';
-            window.location.replace('./item.html' + query);
+            var target = new URL('./item.html', window.location.href);
+            target.search = window.location.search || '';
+            // assign first for broader compatibility in local static servers
+            window.location.assign(target.toString());
+            // fallback in case assign is blocked/interrupted
+            setTimeout(function () {
+                window.location.replace(target.toString());
+            }, 25);
         })();
     </script>
 </head>
 <body>
     <p>Redirecting to product page...</p>
+    <noscript>
+        <p><a href="./item.html">Open product page</a></p>
+    </noscript>
 </body>
 </html>

@@ -185,7 +185,7 @@ wishlize/
 ├── demo-store/                      # Demo e-commerce site
 │   ├── index.html                  # Store homepage
 │   ├── product/                    # Product pages
-│   │   └── blazer.html            # Sample product page
+│   │   └── item.html            # Sample product page
 │   └── assets/                     # Static assets
 │       ├── images/                 # Product images
 │       └── css/                    # Store stylesheets

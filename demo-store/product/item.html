@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Detail | Wishlize</title>
+    <link rel="stylesheet" href="../assets/css/store.css">
+    <style>
+        /* Local overrides for the product page layout if needed */
+        .product-page-nav {
+            padding: 1rem 4rem;
+        }
+        @media (max-width: 1024px) {
+            .product-page-nav {
+                padding: 1rem 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="main-nav product-page-nav">
+        <a href="../index.html" class="nav-logo">WISHLIZE.</a>
+        <div class="nav-links">
+            <a href="../index.html">Back to Collection</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="product-detail-container">
+            <div class="product-gallery">
+                <img id="main-product-image" 
+                     src="https://wishlize-cdn-mumbai.s3.ap-south-1.amazonaws.com/garments/catalog/men/businesswear_men1.jpeg" 
+                     alt="Product image"
+                     data-wishlize-garment="https://wishlize-cdn-mumbai.s3.ap-south-1.amazonaws.com/garments/catalog/men/businesswear_men1.jpeg">
+            </div>
+
+            <div class="product-info-sidebar">
+                <div class="product-meta-header">
+                    <h2 id="product-title" class="serif">Loading Product...</h2>
+                    <p id="product-price" class="price">$0.00</p>
+                </div>
+
+                <p id="product-description" class="description-text">
+                    Loading product details from catalog...
+                </p>
+
+                <!-- Wishlize Widget Container -->
+                <div id="wishlize-widget-container">
+                    Wishlize button loads here.
+                </div>
+
+                <button class="btn-secondary-outline">Add to Shopping Bag</button>
+
+                <div style="margin-top: 4rem; border-top: 1px solid var(--border-soft); padding-top: 2rem;">
+                    <h4 style="text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 1rem;">Specifications</h4>
+                    <ul id="product-specs" style="list-style: none; font-size: 0.9rem; color: var(--text-muted); line-height: 2;">
+                        <li>• Primary Material: Loading...</li>
+                        <li>• Best For: Loading...</li>
+                        <li>• Style Vibe: Loading...</li>
+                        <li>• Availability: Loading...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <span class="footer-logo">WISHLIZE.</span>
+        <p class="footer-credits">&copy; 2026 Wishlize. Virtual Try-On powered by FASHN AI.</p>
+    </footer>
+
+    <script src="../assets/js/concierge/products.js"></script>
+    <script src="../assets/js/concierge/product-page.js"></script>
+
+    <!-- Wishlize Widget Script -->
+    <script src="../assets/js/widget-simple.js"></script>
+</body>
+</html>

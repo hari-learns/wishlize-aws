@@ -1,5 +1,5 @@
 /**
- * Product page renderer for demo-store/product/blazer.html.
+ * Product page renderer for demo-store/product/item.html.
  *
  * Reads `productId` from query params and renders product details from
  * `window.WishlizeProducts` so each card opens its own product context.
@@ -8,6 +8,7 @@
   'use strict';
 
   const DEFAULT_GARMENT_CDN_BASE = 'https://wishlize-cdn-mumbai.s3.ap-south-1.amazonaws.com/garments/catalog';
+  const DEFAULT_FALLBACK_IMAGE = `${DEFAULT_GARMENT_CDN_BASE}/men/businesswear_men1.jpeg`;
 
   function getCatalog() {
     return Array.isArray(globalScope.WishlizeProducts) ? globalScope.WishlizeProducts : [];
@@ -15,7 +16,7 @@
 
   function toProductPageAssetPath(imagePath) {
     if (typeof imagePath !== 'string' || imagePath.length === 0) {
-      return '../assets/images/blazer.jpg';
+      return DEFAULT_FALLBACK_IMAGE;
     }
 
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
@@ -24,6 +25,15 @@
 
     if (imagePath.startsWith('../')) {
       return imagePath;
+    }
+
+    const catalogPrefix = 'assets/images/catalog/';
+    if (imagePath.startsWith(catalogPrefix)) {
+      const relativePath = imagePath.slice(catalogPrefix.length);
+      const configuredBase = normalizeBaseUrl(globalScope.WISHLIZE_GARMENT_CDN_BASE || DEFAULT_GARMENT_CDN_BASE);
+      if (configuredBase) {
+        return `${configuredBase}/${relativePath}`;
+      }
     }
 
     if (imagePath.startsWith('assets/')) {

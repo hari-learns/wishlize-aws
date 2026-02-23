@@ -22,7 +22,7 @@ describe('Feature: wishlize-project-setup, Demo Store Widget Integration Propert
     
     const demoStoreFiles = [
       'demo-store/index.html',
-      'demo-store/product/blazer.html'
+      'demo-store/product/item.html'
     ];
 
     let htmlContents;
@@ -101,8 +101,8 @@ describe('Feature: wishlize-project-setup, Demo Store Widget Integration Propert
         expect(foundWishlizeComment).toBe(true);
       });
 
-      it('should have blazer.html contain wishlize-widget-container element', () => {
-        const blazer$ = parsedDocuments['demo-store/product/blazer.html'];
+      it('should have item.html contain wishlize-widget-container element', () => {
+        const blazer$ = parsedDocuments['demo-store/product/item.html'];
         const widgetContainer = blazer$('#wishlize-widget-container');
         
         expect(widgetContainer.length).toBeGreaterThan(0);
@@ -110,7 +110,7 @@ describe('Feature: wishlize-project-setup, Demo Store Widget Integration Propert
       });
 
       it('should have widget container with meaningful placeholder content', () => {
-        const blazer$ = parsedDocuments['demo-store/product/blazer.html'];
+        const blazer$ = parsedDocuments['demo-store/product/item.html'];
         const widgetContainer = blazer$('#wishlize-widget-container');
         
         expect(widgetContainer.length).toBeGreaterThan(0);
@@ -118,8 +118,8 @@ describe('Feature: wishlize-project-setup, Demo Store Widget Integration Propert
         expect(/wishlize|widget|try.?on/i.test(widgetContainer.text())).toBe(true);
       });
 
-      it('should have widget script comment in blazer.html', () => {
-        const blazerContent = htmlContents['demo-store/product/blazer.html'];
+      it('should have widget script comment in item.html', () => {
+        const blazerContent = htmlContents['demo-store/product/item.html'];
         
         // Should contain commented script tag for widget
         expect(/<!--[\s\S]*?<script[\s\S]*?widget[\s\S]*?-->/i.test(blazerContent)).toBe(true);
@@ -263,17 +263,17 @@ describe('Feature: wishlize-project-setup, Demo Store Widget Integration Propert
 
     describe('Cross-file consistency', () => {
       it('should have consistent widget integration approach across files', () => {
-        const blazerContent = htmlContents['demo-store/product/blazer.html'];
+        const blazerContent = htmlContents['demo-store/product/item.html'];
         const indexContent = htmlContents['demo-store/index.html'];
         
         // Blazer page should have more widget integration than index page
-        const blazer$ = parsedDocuments['demo-store/product/blazer.html'];
+        const blazer$ = parsedDocuments['demo-store/product/item.html'];
         const index$ = parsedDocuments['demo-store/index.html'];
         
         const blazerWidgetElements = blazer$('[id*="wishlize"], [class*="wishlize"]').length;
         const indexWidgetElements = index$('[id*="wishlize"], [class*="wishlize"]').length;
         
-        // Product page should have widget integration (blazer.html)
+        // Product page should have widget integration (item.html)
         expect(blazerWidgetElements).toBeGreaterThan(0);
         
         // Index page may or may not have widget elements (it's a store listing)

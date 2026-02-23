@@ -95,7 +95,191 @@
          src="assets/images/blazer.jpg" 
          alt="Test Product"
          data-wishlize-garment="https://wishlize-cdn.s3.ap-south-1.amazonaws.com/garments/blazer.jpg">
-    
+
+    <h2>Shadow Crawler Fixture:</h2>
+    <div id="crawler-fixture"></div>
+
+    <script src="assets/js/concierge/products.js"></script>
+    <script src="assets/js/concierge/shadow-crawler.js"></script>
+    <script>
+        const REQUIRED_TAXONOMIES = ['occasion', 'vibe', 'material'];
+
+        function validateConciergeCatalog() {
+            const catalog = window.WishlizeProducts;
+            const taxonomy = window.WishlizeProductTaxonomy || {};
+
+            if (!Array.isArray(catalog)) {
+                log('Catalog missing: window.WishlizeProducts is not an array', 'error');
+                return { ok: false, catalog: [], taxonomy: {}, errors: ['catalog missing'] };
+            }
+
+            if (catalog.length < 15) {
+                const message = `Catalog too small: found ${catalog.length}, expected at least 15`;
+                log(message, 'error');
+                return { ok: false, catalog, taxonomy, errors: [message] };
+            }
+
+            const seenIds = new Set();
+            const allowedSets = {};
+            for (const key of REQUIRED_TAXONOMIES) {
+                const values = Array.isArray(taxonomy[key]) ? taxonomy[key] : [];
+                allowedSets[key] = new Set(values);
+            }
+
+            const errors = [];
+
+            catalog.forEach((product, index) => {
+                const context = `index ${index}`;
+                if (!product || typeof product !== 'object') {
+                    errors.push(`${context}: invalid product object`);
+                    return;
+                }
+
+                if (!product.id || typeof product.id !== 'string') {
+                    errors.push(`${context}: missing id`);
+                } else if (seenIds.has(product.id)) {
+                    errors.push(`${context}: duplicate id "${product.id}"`);
+                } else {
+                    seenIds.add(product.id);
+                }
+
+                if (!product.name || typeof product.name !== 'string') {
+                    errors.push(`${context}: missing name`);
+                }
+
+                if (typeof product.price !== 'number' || Number.isNaN(product.price)) {
+                    errors.push(`${context}: invalid price`);
+                }
+
+                if (!Array.isArray(product.images) || product.images.length === 0) {
+                    errors.push(`${context}: images must be a non-empty array`);
+                }
+
+                if (typeof product.inStock !== 'boolean') {
+                    errors.push(`${context}: inStock must be boolean`);
+                }
+
+                if (!product.tags || typeof product.tags !== 'object') {
+                    errors.push(`${context}: tags object missing`);
+                    return;
+                }
+
+                for (const family of REQUIRED_TAXONOMIES) {
+                    const tags = product.tags[family];
+                    if (!Array.isArray(tags) || tags.length === 0) {
+                        errors.push(`${context}: tags.${family} missing or empty`);
+                        continue;
+                    }
+
+                    for (const tag of tags) {
+                        if (!allowedSets[family].has(tag)) {
+                            errors.push(`${context}: tags.${family} contains unknown "${tag}"`);
+                        }
+                    }
+                }
+            });
+
+            if (errors.length > 0) {
+                log(`Catalog validation failed with ${errors.length} issue(s)`, 'error');
+                errors.slice(0, 10).forEach((message) => log(`- ${message}`, 'error'));
+                if (errors.length > 10) {
+                    log(`...and ${errors.length - 10} more issue(s)`, 'error');
+                }
+                console.error('[WishlizeCatalogValidation]', errors);
+                return { ok: false, catalog, taxonomy, errors };
+            }
+
+            log(`Catalog validation passed (${catalog.length} products)`, 'info');
+            return { ok: true, catalog, taxonomy, errors: [] };
+        }
+
+        function buildCrawlerFixture(products, rootId = 'crawler-fixture') {
+            const root = document.getElementById(rootId);
+            if (!root) {
+                return { cards: [], count: 0, error: 'fixture root missing' };
+            }
+
+            root.innerHTML = '';
+            const sample = products.slice(0, Math.min(products.length, 6));
+
+            sample.forEach((product) => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.setAttribute('data-product-id', product.id);
+                card.style.border = '1px solid #2f3f5f';
+                card.style.padding = '8px';
+                card.style.margin = '8px 0';
+                card.innerHTML = `<strong>${product.name}</strong><br><small>${product.id}</small>`;
+                root.appendChild(card);
+            });
+
+            return {
+                cards: Array.from(root.querySelectorAll('.product-card')),
+                count: sample.length,
+                products: sample
+            };
+        }
+
+        function validateShadowCrawler(catalog, taxonomy) {
+            if (!window.WishlizeShadowCrawler) {
+                log('Shadow crawler missing: window.WishlizeShadowCrawler is not loaded', 'error');
+                return;
+            }
+
+            const fixture = buildCrawlerFixture(catalog);
+            if (fixture.error) {
+                log(`Crawler fixture error: ${fixture.error}`, 'error');
+                return;
+            }
+
+            const hydrationReport = window.WishlizeShadowCrawler.hydrateProductCardTags({
+                root: document.getElementById('crawler-fixture'),
+                products: catalog
+            });
+
+            if (hydrationReport.errors.length > 0) {
+                log(`Hydration errors: ${hydrationReport.errors.length}`, 'error');
+                hydrationReport.errors.forEach((message) => log(`- ${message}`, 'error'));
+                return;
+            }
+
+            log(`Hydration passed (${hydrationReport.hydratedCount}/${hydrationReport.cardsFound} cards)`, 'info');
+
+            const crawled = window.WishlizeShadowCrawler.crawlProductTags(
+                document.getElementById('crawler-fixture')
+            );
+
+            if (crawled.length !== fixture.count) {
+                log(`Crawler count mismatch: expected ${fixture.count}, got ${crawled.length}`, 'error');
+                return;
+            }
+
+            const crawlReport = window.WishlizeShadowCrawler.validateCrawlerOutput({
+                crawled,
+                products: fixture.products,
+                taxonomy
+            });
+
+            if (crawlReport.errors.length > 0) {
+                log(`Crawler validation failed with ${crawlReport.errors.length} issue(s)`, 'error');
+                crawlReport.errors.forEach((message) => log(`- ${message}`, 'error'));
+                return;
+            }
+
+            if (crawlReport.warnings.length > 0) {
+                log(`Crawler validation warnings: ${crawlReport.warnings.length}`, 'warn');
+                crawlReport.warnings.slice(0, 6).forEach((message) => log(`- ${message}`, 'warn'));
+            }
+
+            log(`Crawler validation passed (${crawled.length} cards extracted)`, 'info');
+        }
+
+        const catalogCheck = validateConciergeCatalog();
+        if (catalogCheck.ok) {
+            validateShadowCrawler(catalogCheck.catalog, catalogCheck.taxonomy);
+        }
+    </script>
+
     <script src="assets/js/widget-simple.js"></script>
 </body>
 </html>

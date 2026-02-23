@@ -7,6 +7,8 @@
 (function initWishlizeProductPage(globalScope) {
   'use strict';
 
+  const DEFAULT_GARMENT_CDN_BASE = 'https://wishlize-cdn-mumbai.s3.ap-south-1.amazonaws.com/garments/catalog';
+
   function getCatalog() {
     return Array.isArray(globalScope.WishlizeProducts) ? globalScope.WishlizeProducts : [];
   }
@@ -88,6 +90,29 @@
     return products[0] || null;
   }
 
+  function normalizeBaseUrl(baseUrl) {
+    return String(baseUrl || '').replace(/\/+$/, '');
+  }
+
+  function deriveGarmentUrlFromImage(productImage) {
+    if (typeof productImage !== 'string') {
+      return '';
+    }
+
+    const catalogPrefix = 'assets/images/catalog/';
+    if (!productImage.startsWith(catalogPrefix)) {
+      return '';
+    }
+
+    const relativePath = productImage.slice(catalogPrefix.length);
+    const configuredBase = normalizeBaseUrl(globalScope.WISHLIZE_GARMENT_CDN_BASE || DEFAULT_GARMENT_CDN_BASE);
+    if (!configuredBase) {
+      return '';
+    }
+
+    return `${configuredBase}/${relativePath}`;
+  }
+
   function renderProductPage() {
     const products = getCatalog();
     if (products.length === 0) {
@@ -109,7 +134,7 @@
     const displayImage = toProductPageAssetPath((product.images || [])[0]);
     const garmentUrl = (typeof product.garmentUrl === 'string' && product.garmentUrl.length > 0)
       ? product.garmentUrl
-      : new URL(displayImage, globalScope.location.href).href;
+      : (deriveGarmentUrlFromImage((product.images || [])[0]) || new URL(displayImage, globalScope.location.href).href);
 
     if (imageElement) {
       imageElement.src = displayImage;

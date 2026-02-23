@@ -10,6 +10,14 @@
         .info { color: #0af; }
         h1 { color: #fff; }
         button { padding: 10px 20px; margin: 10px 5px; cursor: pointer; }
+        #phase3-controls { margin: 12px 0; padding: 10px; background: #22223f; border-radius: 6px; }
+        #phase3-controls input, #phase3-controls select { width: 100%; margin: 6px 0; padding: 8px; box-sizing: border-box; background: #0f1028; color: #c9ffe0; border: 1px solid #3d4a75; border-radius: 4px; }
+        #phase3-presets { margin: 8px 0; }
+        #phase3-presets button { padding: 8px 10px; font-size: 12px; }
+        .phase3-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin-top: 8px; }
+        .phase3-panel { background: #1f233a; border: 1px solid #344a6f; border-radius: 6px; padding: 8px; }
+        .phase3-panel h3 { margin: 0 0 8px 0; color: #fff; font-size: 14px; }
+        .phase3-panel pre { margin: 0; white-space: pre-wrap; word-break: break-word; color: #9ce6ff; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -99,10 +107,54 @@
     <h2>Shadow Crawler Fixture:</h2>
     <div id="crawler-fixture"></div>
 
+    <h2>Phase 3 Matching Engine Harness:</h2>
+    <div id="phase3-controls">
+        <label for="phase3-prompt">Prompt</label>
+        <input id="phase3-prompt" type="text" value="Need a party look with a bold vibe" />
+        <label for="phase3-audience">Audience Context</label>
+        <select id="phase3-audience">
+            <option value="">none</option>
+            <option value="men">men</option>
+            <option value="woman">woman</option>
+        </select>
+        <button id="phase3-run" type="button">Run Recommendation</button>
+        <div id="phase3-presets">
+            <button type="button" data-preset="Need a wedding look with a classic style" data-audience="woman">Wedding + Classic</button>
+            <button type="button" data-preset="Office meeting outfit, clean and modern" data-audience="men">Business + Modern</button>
+            <button type="button" data-preset="asdf qwer zzz" data-audience="">Vague Input</button>
+        </div>
+    </div>
+    <div class="phase3-grid">
+        <div class="phase3-panel">
+            <h3>Intent</h3>
+            <pre id="phase3-intent-output">{}</pre>
+        </div>
+        <div class="phase3-panel">
+            <h3>Top 3</h3>
+            <pre id="phase3-top3-output">[]</pre>
+        </div>
+        <div class="phase3-panel">
+            <h3>Persona</h3>
+            <pre id="phase3-persona-output">{}</pre>
+        </div>
+        <div class="phase3-panel">
+            <h3>Debug</h3>
+            <pre id="phase3-debug-output">{}</pre>
+        </div>
+    </div>
+
     <script src="assets/js/concierge/products.js"></script>
     <script src="assets/js/concierge/shadow-crawler.js"></script>
+    <script src="assets/js/concierge/intent-parser.js"></script>
+    <script src="assets/js/concierge/scoring.js"></script>
+    <script src="assets/js/concierge/personas.js"></script>
+    <script src="assets/js/concierge/matching-engine.js"></script>
     <script>
         const REQUIRED_TAXONOMIES = ['occasion', 'vibe', 'material'];
+
+        function pretty(value) {
+            return JSON.stringify(value, null, 2);
+        }
 
         function validateConciergeCatalog() {
             const catalog = window.WishlizeProducts;
@@ -274,10 +326,187 @@
             log(`Crawler validation passed (${crawled.length} cards extracted)`, 'info');
         }
 
-        const catalogCheck = validateConciergeCatalog();
-        if (catalogCheck.ok) {
-            validateShadowCrawler(catalogCheck.catalog, catalogCheck.taxonomy);
+        function writePhase3Panel(id, value) {
+            const panel = document.getElementById(id);
+            if (panel) {
+                panel.textContent = typeof value === 'string' ? value : pretty(value);
+            }
         }
+
+        function getPhase3Context() {
+            const audienceSelect = document.getElementById('phase3-audience');
+            const audience = audienceSelect ? audienceSelect.value : '';
+            return {
+                audience: audience || null
+            };
+        }
+
+        async function runPhase3Recommendation(customPrompt) {
+            if (!window.WishlizeMatchingEngine || typeof window.WishlizeMatchingEngine.recommend !== 'function') {
+                log('Phase 3 engine missing: window.WishlizeMatchingEngine.recommend is not loaded', 'error');
+                return null;
+            }
+
+            const promptInput = document.getElementById('phase3-prompt');
+            const text = String(customPrompt || (promptInput ? promptInput.value : '') || '');
+            const context = getPhase3Context();
+
+            const result = await window.WishlizeMatchingEngine.recommend({
+                text,
+                context,
+                products: window.WishlizeProducts
+            });
+
+            writePhase3Panel('phase3-intent-output', result.intent || {});
+            writePhase3Panel(
+                'phase3-top3-output',
+                (result.top3 || []).map((entry) => ({
+                    productId: entry.productId,
+                    score: entry.score,
+                    name: entry.product && entry.product.name,
+                    price: entry.product && entry.product.price,
+                    breakdown: entry.breakdown
+                }))
+            );
+            writePhase3Panel('phase3-persona-output', result.persona || {});
+            writePhase3Panel('phase3-debug-output', result.debug || result.error || {});
+
+            if (result.success) {
+                log(`Phase 3 recommendation run complete (${(result.top3 || []).length} picks)`, 'info');
+            } else {
+                log(`Phase 3 recommendation failed: ${result.error && result.error.code}`, 'error');
+            }
+
+            return result;
+        }
+
+        async function runPhase3Assertions(catalog) {
+            const assertErrors = [];
+
+            if (!window.WishlizeIntentParser || typeof window.WishlizeIntentParser.parse !== 'function') {
+                assertErrors.push('Intent parser unavailable');
+            }
+            if (!window.WishlizeScoring || typeof window.WishlizeScoring.rankProducts !== 'function') {
+                assertErrors.push('Scoring engine unavailable');
+            }
+            if (!window.WishlizePersonas || typeof window.WishlizePersonas.compose !== 'function') {
+                assertErrors.push('Personas module unavailable');
+            }
+            if (!window.WishlizeMatchingEngine || typeof window.WishlizeMatchingEngine.recommend !== 'function') {
+                assertErrors.push('Matching engine unavailable');
+            }
+
+            if (assertErrors.length > 0) {
+                log(`Phase 3 module check failed (${assertErrors.length})`, 'error');
+                assertErrors.forEach((message) => log(`- ${message}`, 'error'));
+                return;
+            }
+
+            const parserCase = window.WishlizeIntentParser.parse('Need a wedding look with classic vibes');
+            if (!parserCase.occasion.includes('wedding') || !parserCase.vibe.includes('classic')) {
+                assertErrors.push('Parser failed wedding/classic extraction');
+            }
+
+            const deterministicOne = await window.WishlizeMatchingEngine.recommend({
+                text: 'Need a party look with bold vibe',
+                context: { audience: 'men' },
+                products: catalog
+            });
+            const deterministicTwo = await window.WishlizeMatchingEngine.recommend({
+                text: 'Need a party look with bold vibe',
+                context: { audience: 'men' },
+                products: catalog
+            });
+
+            const idsOne = (deterministicOne.top3 || []).map((entry) => entry.productId).join('|');
+            const idsTwo = (deterministicTwo.top3 || []).map((entry) => entry.productId).join('|');
+            if (idsOne !== idsTwo) {
+                assertErrors.push('Determinism failed: top3 IDs changed between runs');
+            }
+            if ((deterministicOne.persona || {}).personaId !== (deterministicTwo.persona || {}).personaId) {
+                assertErrors.push('Determinism failed: persona changed between runs');
+            }
+
+            const vague = await window.WishlizeMatchingEngine.recommend({
+                text: 'asdf qwer zzz',
+                context: { audience: null },
+                products: catalog
+            });
+            if (!vague.needsClarification || (vague.top3 || []).length !== 0) {
+                assertErrors.push('Clarification flow failed for vague input');
+            }
+
+            const stockFixture = catalog.map((product) => {
+                if (product.id === 'party-men-1') {
+                    return Object.assign({}, product, { inStock: false });
+                }
+                return product;
+            });
+            const stockResult = await window.WishlizeMatchingEngine.recommend({
+                text: 'party bold for men',
+                context: { audience: 'men' },
+                products: stockFixture
+            });
+            const stockIds = (stockResult.top3 || []).map((entry) => entry.productId);
+            if (stockIds.includes('party-men-1')) {
+                assertErrors.push('Out-of-stock exclusion failed for party-men-1');
+            }
+
+            const shapeResult = await window.WishlizeMatchingEngine.recommend({
+                text: 'business refined for office',
+                context: { audience: 'woman' },
+                products: catalog
+            });
+            if (typeof shapeResult.success !== 'boolean' || !('intent' in shapeResult) || !Array.isArray(shapeResult.top3) || !shapeResult.persona) {
+                assertErrors.push('Result contract shape invalid');
+            }
+
+            if (assertErrors.length > 0) {
+                log(`Phase 3 assertion failed (${assertErrors.length})`, 'error');
+                assertErrors.forEach((message) => log(`- ${message}`, 'error'));
+                return;
+            }
+
+            log('Phase 3 assertions passed', 'info');
+        }
+
+        function bindPhase3Harness() {
+            const runButton = document.getElementById('phase3-run');
+            if (runButton) {
+                runButton.addEventListener('click', () => {
+                    runPhase3Recommendation();
+                });
+            }
+
+            const presetButtons = Array.from(document.querySelectorAll('#phase3-presets [data-preset]'));
+            presetButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    const promptInput = document.getElementById('phase3-prompt');
+                    const audienceInput = document.getElementById('phase3-audience');
+                    if (promptInput) {
+                        promptInput.value = button.getAttribute('data-preset') || '';
+                    }
+                    if (audienceInput) {
+                        audienceInput.value = button.getAttribute('data-audience') || '';
+                    }
+                    runPhase3Recommendation();
+                });
+            });
+        }
+
+        async function bootstrapDiagnostics() {
+            const catalogCheck = validateConciergeCatalog();
+            if (!catalogCheck.ok) {
+                return;
+            }
+
+            validateShadowCrawler(catalogCheck.catalog, catalogCheck.taxonomy);
+            bindPhase3Harness();
+            await runPhase3Assertions(catalogCheck.catalog);
+            await runPhase3Recommendation();
+        }
+
+        bootstrapDiagnostics();
     </script>
 
     <script src="assets/js/widget-simple.js"></script>

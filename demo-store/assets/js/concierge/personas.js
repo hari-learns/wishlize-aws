@@ -1,0 +1,149 @@
+/**
+ * Wishlize Stylist Personas (Phase 3.3)
+ *
+ * Generates deterministic concierge copy for curated, clarification,
+ * and no-stock outcomes.
+ */
+(function initWishlizePersonas(globalScope) {
+  'use strict';
+
+  const TEMPLATES = {
+    curated: [
+      {
+        id: 'curated-atelier-01',
+        render: ({ occasionText, vibeText }) =>
+          `For ${occasionText}, I curated three looks with a ${vibeText} direction and clean match confidence.`
+      },
+      {
+        id: 'curated-editorial-02',
+        render: ({ occasionText, vibeText }) =>
+          `These three picks align with your ${occasionText} plan and keep the vibe ${vibeText} without overstyling.`
+      },
+      {
+        id: 'curated-premium-03',
+        render: ({ occasionText, vibeText }) =>
+          `I narrowed this to three strong options for ${occasionText}, tuned toward a ${vibeText} finish.`
+      },
+      {
+        id: 'curated-runway-04',
+        render: ({ occasionText, vibeText }) =>
+          `Based on ${occasionText}, these edits carry the ${vibeText} energy best in the current catalog.`
+      },
+      {
+        id: 'curated-precision-05',
+        render: ({ occasionText, vibeText }) =>
+          `Your top three are ready: optimized for ${occasionText} with a ${vibeText} visual language.`
+      }
+    ],
+    clarify: [
+      {
+        id: 'clarify-signature-01',
+        render: () => 'I can style this quickly, but I need one detail first so the recommendations stay accurate.'
+      },
+      {
+        id: 'clarify-tailor-02',
+        render: () => 'Let me tighten the fit: share the occasion and style mood, then I will return your top three.'
+      },
+      {
+        id: 'clarify-concierge-03',
+        render: () => 'I need clearer intent before curating. Tell me where you are wearing it and the vibe you want.'
+      }
+    ],
+    'no-stock': [
+      {
+        id: 'nostock-atelier-01',
+        render: ({ occasionText }) =>
+          `I found close matches for ${occasionText}, but the best ones are currently out of stock. Give me an alternate vibe and I will rebalance.`
+      }
+    ]
+  };
+
+  function normalizeMode(mode) {
+    const normalized = String(mode || '').trim().toLowerCase();
+    if (normalized === 'curated' || normalized === 'clarify' || normalized === 'no-stock') {
+      return normalized;
+    }
+    return 'clarify';
+  }
+
+  function hashString(value) {
+    const input = String(value || '');
+    let hash = 5381;
+
+    for (let index = 0; index < input.length; index += 1) {
+      hash = ((hash << 5) + hash) + input.charCodeAt(index);
+      hash = hash >>> 0;
+    }
+
+    return hash;
+  }
+
+  function pickTemplate(mode, seedValue) {
+    const templates = TEMPLATES[mode] || TEMPLATES.clarify;
+    const hash = hashString(seedValue);
+    const index = templates.length === 0 ? 0 : hash % templates.length;
+    return templates[index] || templates[0];
+  }
+
+  function summarizeTags(tags, fallbackValue) {
+    const normalized = Array.isArray(tags)
+      ? tags.map((value) => String(value || '').trim()).filter(Boolean)
+      : [];
+
+    if (normalized.length === 0) {
+      return fallbackValue;
+    }
+
+    return normalized.join(', ');
+  }
+
+  function buildSeed(mode, intent, top3, externalSeed) {
+    if (externalSeed) {
+      return String(externalSeed);
+    }
+
+    const occasion = summarizeTags(intent && intent.occasion, 'none');
+    const vibe = summarizeTags(intent && intent.vibe, 'none');
+    const productIds = (Array.isArray(top3) ? top3 : [])
+      .map((entry) => String(entry && entry.productId ? entry.productId : ''))
+      .join('|');
+
+    return [mode, occasion, vibe, productIds].join('::');
+  }
+
+  function compose(input = {}) {
+    const mode = normalizeMode(input.mode);
+    const intent = input.intent && typeof input.intent === 'object' ? input.intent : {};
+    const top3 = Array.isArray(input.top3) ? input.top3 : [];
+
+    const template = pickTemplate(mode, buildSeed(mode, intent, top3, input.seed));
+
+    const templateParams = {
+      occasionText: summarizeTags(intent.occasion, 'your occasion'),
+      vibeText: summarizeTags(intent.vibe, 'refined'),
+      count: top3.length
+    };
+
+    const output = {
+      intro: template.render(templateParams),
+      personaId: template.id
+    };
+
+    if (mode === 'clarify') {
+      output.followUpQuestion = 'What is the occasion, preferred vibe, and audience (men or woman)?';
+    }
+
+    if (mode === 'no-stock') {
+      output.followUpQuestion = 'Want me to broaden to nearby vibes so I can return in-stock alternatives?';
+    }
+
+    return output;
+  }
+
+  globalScope.WishlizePersonas = {
+    compose,
+    availableModes() {
+      return Object.keys(TEMPLATES);
+    }
+  };
+})(window);

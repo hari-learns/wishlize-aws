@@ -120,3 +120,32 @@ Purpose: Track what to upgrade from demo implementation to production-grade impl
 - Security: CSP, strict CORS policy, dependency scanning, secret rotation.
 - QA: integration/e2e suite for concierge path and visual regression tests.
 - Delivery: feature flags, canary rollout, rollback playbook.
+
+## Phase 3 Implementation - Prod-Later Addendum (Post Demo)
+
+### Bit 3.1 Intent Parser (Prod Upgrade Track)
+- Add typo-tolerant lexical matching and stemming/lemmatization.
+- Add multilingual intent packs (config-driven locale maps).
+- Add ambiguity scoring and explicit disambiguation prompts.
+- Add versioned parser profiles with rollout control.
+
+### Bit 3.2 Scoring Engine (Prod Upgrade Track)
+- Move scoring weights to dynamic config (remote flags / experiment buckets).
+- Add diversity and novelty penalties to avoid repetitive top-3 outputs.
+- Add contextual ranking constraints (region, inventory freshness, margin rules).
+- Emit explanation metadata for observability and support tooling.
+
+### Bit 3.3 Persona System (Prod Upgrade Track)
+- Externalize persona templates to managed content service.
+- Add locale, brand-voice, and policy guardrails.
+- Add safety linting for generated persona text and fallback cascade.
+- Add template analytics (CTR, conversion, dwell by persona).
+
+### Bedrock Integration Path (Prod Upgrade Track)
+- Promote `WishlizeMatchingEngine.setEnhancer(fn)` hook to Bedrock adapter.
+- Use deterministic parser/scorer as baseline and Bedrock only for:
+  - low-confidence clarification
+  - reranking ties
+  - premium curation copy
+- Add timeout, fallback, and schema validation around Bedrock outputs.
+- Add cost controls and token budgeting with per-session guardrails.
